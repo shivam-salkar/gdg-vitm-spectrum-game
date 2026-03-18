@@ -16,7 +16,7 @@ export default function AttackPopup({ visible, onClick }) {
   const handlePress = () => {
     if (!visible) return;
     setIsPressed(true);
-    
+
     // Visual feedback delay before triggering
     setTimeout(() => {
       setIsPressed(false);
@@ -38,8 +38,7 @@ export default function AttackPopup({ visible, onClick }) {
         zIndex: 1000,
       }}
       onMouseDown={handlePress}
-      onTouchStart={handlePress}
-    >
+      onTouchStart={handlePress}>
       <div
         style={{
           width: "100px",
@@ -51,8 +50,7 @@ export default function AttackPopup({ visible, onClick }) {
           transform: isPressed ? "scale(0.85)" : "scale(1)",
           filter: isPressed ? "grayscale(1) brightness(0.6)" : "none",
           transition: "transform 0.1s ease-out, filter 0.1s ease-out",
-        }}
-      >
+        }}>
         <img
           src="/assets/sword_button.png"
           alt="Attack"

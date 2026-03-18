@@ -299,10 +299,7 @@ export default function CombatScreen({ gameState, sounds }) {
         />
       </div>
 
-      <AttackPopup
-        visible={showAttackPopup}
-        onClick={handleClick}
-      />
+      <AttackPopup visible={showAttackPopup} onClick={handleClick} />
 
       {slashActive && (
         <div

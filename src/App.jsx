@@ -107,38 +107,101 @@ export default function App() {
   }
 
   return (
-    <div
-      style={{
-        width: "100vw",
-        height: "100vh",
-        backgroundColor: "#000",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        position: "relative",
-        overflow: "hidden",
-      }}>
+    <>
+      <style>{`
+        #portrait-lock {
+          display: none;
+        }
+        @media screen and (max-width: 900px) and (orientation: portrait) {
+          #portrait-lock {
+            display: flex !important;
+          }
+          #game-content {
+            display: none !important;
+          }
+        }
+      `}</style>
+
+      {/* Portrait Lock Screen Overlay */}
       <div
+        id="portrait-lock"
         style={{
-          position: "relative",
-          width: CONFIG.STAGE_WIDTH,
-          height: CONFIG.STAGE_HEIGHT,
-          overflow: "hidden",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
           backgroundColor: "#0d1117",
-          boxShadow: "0 0 20px rgba(255, 69, 0, 0.3)",
-          transform: `scale(${scale})`,
-          transformOrigin: "center center",
+          zIndex: 99999,
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          color: "#fff",
+          fontFamily: "'Noto Sans JP', sans-serif",
         }}>
-        {screen === "loading" && (
-          <LoadingScreen gameState={gameState} sounds={sounds} />
-        )}
-        {screen === "intro" && <IntroScreen gameState={gameState} />}
-        {screen === "tutorial" && <TutorialScreen gameState={gameState} />}
-        {screen === "combat" && (
-          <CombatScreen gameState={gameState} sounds={sounds} />
-        )}
-        {screen === "reward" && <RewardScreen gameState={gameState} />}
+        <img
+          src="/assets/phone-rotate.png"
+          alt="Rotate phone"
+          style={{
+            width: "120px",
+            marginBottom: "30px",
+            opacity: 0.8,
+            filter: "invert(1)",
+          }}
+        />
+        <h2
+          style={{
+            marginBottom: "15px",
+            letterSpacing: "2px",
+            textAlign: "center",
+          }}>
+          LANDSCAPE REQUIRED
+        </h2>
+        <p
+          style={{
+            textAlign: "center",
+            padding: "0 40px",
+            lineHeight: "1.5",
+            opacity: 0.7,
+          }}>
+          Please rotate your device to play SPECTRUM.
+        </p>
       </div>
-    </div>
+
+      <div
+        id="game-content"
+        style={{
+          width: "100vw",
+          height: "100vh",
+          backgroundColor: "#000",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          position: "relative",
+          overflow: "hidden",
+        }}>
+        <div
+          style={{
+            position: "relative",
+            width: CONFIG.STAGE_WIDTH,
+            height: CONFIG.STAGE_HEIGHT,
+            overflow: "hidden",
+            backgroundColor: "#0d1117",
+            boxShadow: "0 0 20px rgba(255, 69, 0, 0.3)",
+            transform: `scale(${scale})`,
+            transformOrigin: "center center",
+          }}>
+          {screen === "loading" && (
+            <LoadingScreen gameState={gameState} sounds={sounds} />
+          )}
+          {screen === "intro" && <IntroScreen gameState={gameState} />}
+          {screen === "tutorial" && <TutorialScreen gameState={gameState} />}
+          {screen === "combat" && (
+            <CombatScreen gameState={gameState} sounds={sounds} />
+          )}
+          {screen === "reward" && <RewardScreen gameState={gameState} />}
+        </div>
+      </div>
+    </>
   );
 }

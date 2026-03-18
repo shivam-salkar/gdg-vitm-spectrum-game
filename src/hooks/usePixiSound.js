@@ -96,6 +96,18 @@ export function useSound() {
     }
   }, []);
 
+  const pauseFightMusic = useCallback(() => {
+    if (fightMusicRef.current) {
+      fightMusicRef.current.pause();
+    }
+  }, []);
+
+  const resumeFightMusic = useCallback(() => {
+    if (fightMusicRef.current) {
+      fightMusicRef.current.play().catch((e) => console.log(e));
+    }
+  }, []);
+
   const ambientWindRef = useRef(null);
 
   const startAmbientWind = useCallback(() => {
@@ -143,6 +155,8 @@ export function useSound() {
     stopAmbientWind,
     startFightMusic,
     stopFightMusic,
+    pauseFightMusic,
+    resumeFightMusic,
   };
 }
 

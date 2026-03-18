@@ -144,8 +144,7 @@ export default function IntroScreen({ gameState }) {
         onMouseLeave={(e) => {
           e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
           e.currentTarget.style.color = "#fff";
-        }}
-      >
+        }}>
         SKIP INTRO ➔
       </div>
     </div>
