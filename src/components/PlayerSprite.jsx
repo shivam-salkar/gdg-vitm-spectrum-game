@@ -5,9 +5,9 @@ const ANIMATIONS = {
   idle: { url: "/assets/Samurai/Idle.png", frames: 6, speed: 0.03 },
   walk: { url: "/assets/Samurai/Walk.png", frames: 9, speed: 0.1 },
   run: { url: "/assets/Samurai/Run.png", frames: 8, speed: 0.15 },
-  attack1: { url: "/assets/Samurai/Attack_1.png", frames: 4, speed: 0.15 },
-  attack2: { url: "/assets/Samurai/Attack_2.png", frames: 4, speed: 0.15 },
-  attack3: { url: "/assets/Samurai/Attack_3.png", frames: 4, speed: 0.15 },
+  attack1: { url: "/assets/Samurai/Attack_1.png", frames: 4, speed: 0.05 },
+  attack2: { url: "/assets/Samurai/Attack_2.png", frames: 5, speed: 0.05 },
+  attack3: { url: "/assets/Samurai/Attack_3.png", frames: 4, speed: 0.05 },
   protect: { url: "/assets/Samurai/Protection.png", frames: 3, speed: 0.1 },
   death: { url: "/assets/Samurai/Dead.png", frames: 6, speed: 0.1 },
 };

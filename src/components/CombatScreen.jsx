@@ -77,7 +77,7 @@ export default function CombatScreen({ gameState, sounds }) {
     if (gameState.phase === "running" && playerPhase === "run") {
       const animate = () => {
         setPlayerX((prevX) => {
-          const newX = prevX + 8; // Move right
+          const newX = prevX + 0.1; // Move right slowly
           if (newX >= 480) {
             // Reached attack position
             return 480;
@@ -99,7 +99,7 @@ export default function CombatScreen({ gameState, sounds }) {
           setPlayerPhase(randomAttack);
           gameState.setPhase("attacking");
         }
-      }, 1200); // Duration of run animation
+      }, 100); // Duration of run animation
 
       return () => {
         clearTimeout(attackTimeout);

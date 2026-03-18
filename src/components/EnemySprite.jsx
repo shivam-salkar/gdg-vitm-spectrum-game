@@ -12,7 +12,7 @@ const ANIMATIONS = {
   },
   attack2: {
     url: "/assets/Samurai_Commander/Attack_2.png",
-    frames: 4,
+    frames: 5,
     speed: 0.15,
   },
   attack3: {
@@ -22,8 +22,8 @@ const ANIMATIONS = {
   },
   protect: {
     url: "/assets/Samurai_Commander/Protect.png",
-    frames: 3,
-    speed: 0.1,
+    frames: 2,
+    speed: 0.03,
   },
   hit: { url: "/assets/Samurai_Commander/Hurt.png", frames: 2, speed: 0.15 },
   death: { url: "/assets/Samurai_Commander/Dead.png", frames: 6, speed: 0.1 },
