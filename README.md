@@ -1,16 +1,69 @@
-# React + Vite
+# GDG Spectrum Game
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A 2D pixel-art samurai fighting game built with React and Vite.
 
-Currently, two official plugins are available:
+## 🚀 Setup Instructions
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Follow these steps to get the game running locally on your machine.
 
-## React Compiler
+### Prerequisites
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Ensure you have the following installed:
+- [Node.js](https://nodejs.org/) (Recommended: Node 20+, though the game works on Node 25)
+- `npm` (comes with Node.js)
 
-## Expanding the ESLint configuration
+### 1. Install Dependencies
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Clone the repository and install the required npm packages:
+
+```bash
+# Navigate to the project directory
+cd gdg-spectrum-game
+
+# Install dependencies using npm
+npm install
+```
+
+### 2. Start the Development Server
+
+Run the Vite development server:
+
+```bash
+npm run dev
+```
+
+This will start the local server. You should see output similar to this:
+```
+  VITE v8.0.0  ready in X ms
+  ➜  Local:   http://localhost:5173/
+```
+
+### 3. Play the Game
+
+Open your web browser and navigate to the Local URL provided in the terminal (usually `http://localhost:5173/`).
+
+- **Warning**: Audio auto-plays dynamically on the intro screen.
+- Maximize the window for the best responsive pixel-art scaling!
+
+### Build for Production
+
+If you want to build the static site for production deployment:
+
+```bash
+npm run build
+```
+This will compile the game into the `dist/` directory.
+
+You can preview the built production site locally by running:
+```bash
+npm run preview
+```
+
+---
+
+## Technical Stack
+
+- **Framework**: React 18
+- **Build Tool**: Vite 8
+- **Styling**: Tailwind CSS & Vanilla CSS
+- **Animations/Sprites**: Custom React Hooks for 2D Sprite Animation Frame pacing
