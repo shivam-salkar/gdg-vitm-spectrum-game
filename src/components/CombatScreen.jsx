@@ -67,7 +67,7 @@ export default function CombatScreen({ gameState, sounds }) {
           sounds.victory();
           gameState.setScreen("reward");
         }
-      }, 1500);
+      }, 3000); // Give death animation time to play before reward screen (3s)
       return () => clearTimeout(timer);
     } else {
       setScreenDarken(false);
@@ -127,18 +127,22 @@ export default function CombatScreen({ gameState, sounds }) {
 
       gameState.doDamage(25);
 
-      setTimeout(() => {
-        if (!cleanupRef.current) {
-          setPlayerPhase("idle");
-          setEnemyPhase("idle");
-          setPlayerX(300); // Reset player position
-          gameState.setPhase("idle");
-        }
-      }, 600);
-
       if (gameState.enemyHP <= 25) {
         sounds.enemyDeath();
       }
+
+      setTimeout(() => {
+        if (!cleanupRef.current) {
+          if (gameState.enemyHP > 25) {
+            setPlayerPhase("idle");
+            setEnemyPhase("idle");
+            setPlayerX(300); // Reset player position
+            gameState.setPhase("idle");
+          } else {
+            setPlayerPhase("idle");
+          }
+        }
+      }, 600);
     }
   }, [gameState.phase, playerPhase]);
 
@@ -152,8 +156,11 @@ export default function CombatScreen({ gameState, sounds }) {
   }, [gameState.phase, gameState]);
 
   // Determine enemy display phase
-  const displayEnemyPhase =
-    gameState.phase === "attacking" ? "hit" : enemyPhase;
+  let displayEnemyPhase = enemyPhase;
+  if (gameState.phase === "attacking") displayEnemyPhase = "hit";
+  if (gameState.phase === "death") displayEnemyPhase = "death";
+
+  const isDead = gameState.phase === "death";
 
   return (
     <div
@@ -168,116 +175,120 @@ export default function CombatScreen({ gameState, sounds }) {
       onClick={handleClick}>
       <Background />
 
-      <div
-        style={{
-          position: "absolute",
-          left: "50px",
-          top: "20px",
-          display: "flex",
-          alignItems: "center",
-          zIndex: 100,
-        }}>
-        <div
-          style={{
-            width: "128px",
-            height: "128px",
-            backgroundImage: "url('/assets/hero-icon.png')",
-            backgroundSize: "contain",
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-            imageRendering: "pixelated",
-            filter: "drop-shadow(0 0 5px rgba(255, 255, 255, 0.5))",
-            marginRight: "-30px", // Pull healthbar to touch center
-            position: "relative",
-            zIndex: 10, // Ensure icon is on TOP
-          }}
-        />
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "2px",
-            zIndex: 1,
-          }}>
+      {!isDead && (
+        <>
           <div
             style={{
-              color: "white",
-              fontSize: "20px",
-              fontFamily: "'Noto Sans JP', sans-serif",
-              fontWeight: "bold",
-              textShadow: "2px 2px 4px black",
-              marginLeft: "30px", // Pushed in to clear icon
-              letterSpacing: "1px",
+              position: "absolute",
+              left: "50px",
+              top: "20px",
+              display: "flex",
+              alignItems: "center",
+              zIndex: 100,
             }}>
-            THE GHOST (YOU)
+            <div
+              style={{
+                width: "128px",
+                height: "128px",
+                backgroundImage: "url('/assets/hero-icon.png')",
+                backgroundSize: "contain",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center",
+                imageRendering: "pixelated",
+                filter: "drop-shadow(0 0 5px rgba(255, 255, 255, 0.5))",
+                marginRight: "-30px", // Pull healthbar to touch center
+                position: "relative",
+                zIndex: 10, // Ensure icon is on TOP
+              }}
+            />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "2px",
+                zIndex: 1,
+              }}>
+              <div
+                style={{
+                  color: "white",
+                  fontSize: "20px",
+                  fontFamily: "'Noto Sans JP', sans-serif",
+                  fontWeight: "bold",
+                  textShadow: "2px 2px 4px black",
+                  marginLeft: "30px", // Pushed in to clear icon
+                  letterSpacing: "1px",
+                }}>
+                THE GHOST (YOU)
+              </div>
+              <HealthBar
+                hp={gameState.playerHP}
+                maxHp={100}
+                color="green"
+                width={320}
+                height={22}
+                style={{ zIndex: 1 }}
+              />
+            </div>
           </div>
-          <HealthBar
-            hp={gameState.playerHP}
-            maxHp={100}
-            color="green"
-            width={320}
-            height={22}
-            style={{ zIndex: 1 }}
-          />
-        </div>
-      </div>
 
-      <div
-        style={{
-          position: "absolute",
-          right: "20px",
-          top: "4px",
-          display: "flex",
-          flexDirection: "row-reverse",
-          alignItems: "center",
-          zIndex: 100,
-        }}>
-        <div
-          style={{
-            width: "160px",
-            height: "160px",
-            backgroundImage: "url('/assets/enemy-icon.png')",
-            backgroundSize: "contain",
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-            transform: "scaleX(-1)",
-            imageRendering: "pixelated",
-            filter: "drop-shadow(0 0 5px rgba(255, 0, 0, 0.5))",
-            marginLeft: "-40px", // Pull healthbar to touch center
-            position: "relative",
-            zIndex: 10, // Ensure icon is on TOP
-          }}
-        />
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "2px",
-            alignItems: "flex-end",
-            zIndex: 1,
-          }}>
           <div
             style={{
-              color: "white",
-              fontSize: "20px",
-              fontFamily: "'Noto Sans JP', sans-serif",
-              fontWeight: "bold",
-              textShadow: "2px 2px 4px black",
-              marginRight: "40px", // Pushed in to clear icon
-              letterSpacing: "1px",
+              position: "absolute",
+              right: "20px",
+              top: "4px",
+              display: "flex",
+              flexDirection: "row-reverse",
+              alignItems: "center",
+              zIndex: 100,
             }}>
-            SAMURAI COMMANDER
+            <div
+              style={{
+                width: "160px",
+                height: "160px",
+                backgroundImage: "url('/assets/enemy-icon.png')",
+                backgroundSize: "contain",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center",
+                transform: "scaleX(-1)",
+                imageRendering: "pixelated",
+                filter: "drop-shadow(0 0 5px rgba(255, 0, 0, 0.5))",
+                marginLeft: "-40px", // Pull healthbar to touch center
+                position: "relative",
+                zIndex: 10, // Ensure icon is on TOP
+              }}
+            />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "2px",
+                alignItems: "flex-end",
+                zIndex: 1,
+              }}>
+              <div
+                style={{
+                  color: "white",
+                  fontSize: "20px",
+                  fontFamily: "'Noto Sans JP', sans-serif",
+                  fontWeight: "bold",
+                  textShadow: "2px 2px 4px black",
+                  marginRight: "40px", // Pushed in to clear icon
+                  letterSpacing: "1px",
+                }}>
+                SAMURAI COMMANDER
+              </div>
+              <HealthBar
+                hp={gameState.enemyHP}
+                maxHp={100}
+                color="enemy"
+                width={320}
+                height={22}
+                style={{ zIndex: 1 }}
+              />
+            </div>
           </div>
-          <HealthBar
-            hp={gameState.enemyHP}
-            maxHp={100}
-            color="enemy"
-            width={320}
-            height={22}
-            style={{ zIndex: 1 }}
-          />
-        </div>
-      </div>
+        </>
+      )}
 
       <PlayerSprite x={playerX} y={290} phase={playerPhase} />
 
@@ -299,7 +310,9 @@ export default function CombatScreen({ gameState, sounds }) {
         />
       </div>
 
-      <AttackPopup visible={showAttackPopup} onClick={handleClick} />
+      {!isDead && (
+        <AttackPopup visible={showAttackPopup} onClick={handleClick} />
+      )}
 
       {slashActive && (
         <div

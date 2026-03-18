@@ -65,7 +65,13 @@ export default function EnemySprite({
 
       // Advance frame based on speed
       if (timeRef.current >= 1 / currentAction.speed) {
-        frameRef.current = (frameRef.current + 1) % currentAction.frames;
+        let nextFrame = frameRef.current + 1;
+        if (phase === "death" && nextFrame >= currentAction.frames) {
+          nextFrame = currentAction.frames - 1; // Stay on last frame
+        } else {
+          nextFrame = nextFrame % currentAction.frames;
+        }
+        frameRef.current = nextFrame;
         timeRef.current = 0;
       }
 
