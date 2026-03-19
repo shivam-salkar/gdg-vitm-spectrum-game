@@ -4,7 +4,7 @@ const initialState = {
   screen: "loading", // "loading" | "intro" | "tutorial" | "combat" | "reward"
   enemyHP: 100,
   playerHP: 100,
-  phase: "idle", // "idle" | "readyToAttack" | "running" | "attacking" | "hit" | "death"
+  phase: "idle", // "idle" | "readyToAttack" | "running" | "attacking" | "hit" | "death" | "enemyAttacking" | "playerDead"
   attackType: null, // "attack1" | "attack2" | "attack3"
   clickCount: 0,
 };
@@ -36,6 +36,17 @@ export function useGameState() {
     });
   }, []);
 
+  const doPlayerDamage = useCallback((amount) => {
+    setState((s) => {
+      const newHP = Math.max(0, s.playerHP - amount);
+      return {
+        ...s,
+        playerHP: newHP,
+        phase: newHP <= 0 ? "playerDead" : s.phase,
+      };
+    });
+  }, []);
+
   const resetGame = useCallback(() => {
     setState({ ...initialState, screen: "loading" });
   }, []);
@@ -46,6 +57,7 @@ export function useGameState() {
     setPhase,
     setAttackType,
     doDamage,
+    doPlayerDamage,
     resetGame,
   };
 }

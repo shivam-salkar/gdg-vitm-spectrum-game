@@ -66,26 +66,31 @@
 }
 
 @keyframes shakeHit {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-10px);
-  }
-  75% {
-    transform: translateX(10px);
-  }
+  0%   { transform: translate(0,    0);   }
+  15%  { transform: translate(-8px, 3px);  }
+  30%  { transform: translate(8px, -3px);  }
+  45%  { transform: translate(-6px, 2px);  }
+  60%  { transform: translate(6px, -2px);  }
+  75%  { transform: translate(-3px, 1px);  }
+  90%  { transform: translate(3px, -1px);  }
+  100% { transform: translate(0,    0);   }
 }
 
 @keyframes slashStrike {
   0% {
     opacity: 1;
-    transform: scale(1) rotate(-45deg);
+    transform: scale(1.4) rotate(-30deg);
+    filter: blur(0px);
+  }
+  60% {
+    opacity: 0.6;
+    transform: scale(0.8) rotate(20deg);
+    filter: blur(1px);
   }
   100% {
     opacity: 0;
-    transform: scale(0.5) rotate(45deg);
+    transform: scale(0.3) rotate(60deg);
+    filter: blur(3px);
   }
 }
 
@@ -336,12 +341,13 @@
   height: 100%;
   background: linear-gradient(
     135deg,
-    transparent 30%,
-    #ffffff 50%,
-    transparent 70%
+    transparent 20%,
+    rgba(255,255,255,0.95) 50%,
+    transparent 80%
   );
-  clip-path: polygon(20% 80%, 50% 10%, 80% 80%, 50% 70%);
-  opacity: 0.8;
+  clip-path: polygon(10% 90%, 50% 5%, 90% 90%, 50% 75%);
+  opacity: 0.95;
+  filter: blur(1px);
 }
 
 .slash-effect::after {
@@ -351,12 +357,13 @@
   height: 100%;
   background: linear-gradient(
     135deg,
-    transparent 35%,
-    #ff6b00 50%,
-    transparent 65%
+    transparent 30%,
+    rgba(255,80,0,0.9) 50%,
+    transparent 70%
   );
-  clip-path: polygon(25% 75%, 50% 20%, 75% 75%, 50% 65%);
-  opacity: 0.6;
+  clip-path: polygon(20% 80%, 50% 15%, 80% 80%, 50% 68%);
+  opacity: 0.75;
+  filter: blur(0.5px);
 }
 
 /* Torch Animation */
@@ -518,4 +525,31 @@
   100% {
     filter: grayscale(1);
   }
+}
+
+/* Screen shake - applied only to overlay, not sprites */
+.screen-shake {
+  animation: shakeHit 0.35s ease-out;
+}
+
+/* Floating damage numbers */
+@keyframes dmgFloat {
+  0%   { opacity: 1;   transform: translateY(0)   scale(1.3); }
+  30%  { opacity: 1;   transform: translateY(-28px) scale(1); }
+  80%  { opacity: 0.7; transform: translateY(-54px) scale(0.9); }
+  100% { opacity: 0;   transform: translateY(-70px) scale(0.8); }
+}
+
+.damage-popup {
+  animation: dmgFloat 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  user-select: none;
+}
+
+/* Sprite rendering optimization */
+.sprite {
+  contain: layout style paint;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
 }
