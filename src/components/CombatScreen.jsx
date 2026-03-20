@@ -16,8 +16,10 @@ export default function CombatScreen({ gameState, sounds }) {
   const [isShaking, setIsShaking] = useState(false);
   const [slashPos, setSlashPos] = useState({ x: 0, y: 0 });
   const [showAttackPopup, setShowAttackPopup] = useState(false);
+  const [isAttackOnCooldown, setIsAttackOnCooldown] = useState(false);
   const cleanupRef = useRef(false);
   const animationFrameRef = useRef(null);
+  const cooldownTimeoutRef = useRef(null);
 
   useEffect(() => {
     console.log(
@@ -36,6 +38,9 @@ export default function CombatScreen({ gameState, sounds }) {
       sounds.stopFightMusic();
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (cooldownTimeoutRef.current) {
+        clearTimeout(cooldownTimeoutRef.current);
       }
     };
   }, []);
@@ -155,13 +160,20 @@ export default function CombatScreen({ gameState, sounds }) {
   }, [gameState.phase, playerPhase]);
 
   const handleClick = useCallback(() => {
-    if (gameState.phase === "readyToAttack" && !cleanupRef.current) {
-      setShowAttackPopup(false);
+    if (
+      gameState.phase === "readyToAttack" &&
+      !cleanupRef.current &&
+      !isAttackOnCooldown
+    ) {
+      setIsAttackOnCooldown(true);
+      cooldownTimeoutRef.current = setTimeout(() => {
+        setIsAttackOnCooldown(false);
+      }, 1500);
       gameState.setPhase("running");
       setPlayerPhase("run");
       setEnemyPhase("protect");
     }
-  }, [gameState.phase, gameState]);
+  }, [gameState.phase, gameState, isAttackOnCooldown]);
 
   // Determine enemy display phase
   let displayEnemyPhase = enemyPhase;
@@ -169,6 +181,8 @@ export default function CombatScreen({ gameState, sounds }) {
   if (gameState.phase === "death") displayEnemyPhase = "death";
 
   const isDead = gameState.phase === "death";
+  const isAttackButtonEnabled =
+    showAttackPopup && gameState.phase === "readyToAttack" && !isAttackOnCooldown;
 
   return (
     <div
@@ -179,7 +193,7 @@ export default function CombatScreen({ gameState, sounds }) {
         height: "100%",
         backgroundColor: "#0d1117",
         overflow: "hidden",
-        cursor: gameState.phase === "readyToAttack" ? "pointer" : "default",
+        cursor: isAttackButtonEnabled ? "pointer" : "default",
       }}
       onClick={handleClick}>
       <Background />
@@ -320,7 +334,11 @@ export default function CombatScreen({ gameState, sounds }) {
       </div>
 
       {!isDead && (
-        <AttackPopup visible={showAttackPopup} onClick={handleClick} />
+        <AttackPopup
+          visible={showAttackPopup}
+          enabled={isAttackButtonEnabled}
+          onClick={handleClick}
+        />
       )}
 
       {slashActive && (

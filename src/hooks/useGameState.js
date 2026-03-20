@@ -1,7 +1,19 @@
 import { useState, useCallback } from "react";
 
+const VALID_START_SCREENS = new Set(["loading", "intro"]);
+
+const envStartScreen = String(import.meta.env.VITE_START_SCREEN || "")
+  .trim()
+  .toLowerCase();
+
+const fallbackStartScreen = import.meta.env.DEV ? "intro" : "loading";
+
+const INITIAL_SCREEN = VALID_START_SCREENS.has(envStartScreen)
+  ? envStartScreen
+  : fallbackStartScreen;
+
 const initialState = {
-  screen: "loading", // "loading" | "intro" | "tutorial" | "combat" | "reward"
+  screen: INITIAL_SCREEN, // "loading" | "intro" | "tutorial" | "combat" | "reward"
   enemyHP: 100,
   playerHP: 100,
   phase: "idle", // "idle" | "readyToAttack" | "running" | "attacking" | "hit" | "death"
@@ -37,7 +49,7 @@ export function useGameState() {
   }, []);
 
   const resetGame = useCallback(() => {
-    setState({ ...initialState, screen: "loading" });
+    setState({ ...initialState, screen: INITIAL_SCREEN });
   }, []);
 
   return {
