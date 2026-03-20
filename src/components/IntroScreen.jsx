@@ -11,17 +11,24 @@ export default function IntroScreen({ gameState }) {
   const [subtitleChar, setSubtitleChar] = useState(0);
   const cleanupRef = useRef(false);
   const audioPlayedRef = useRef(false);
+  const introAudioRef = useRef(null);
 
   const LYRICS =
-    "My journey ends here like my Uncle who you called weak, he had honour a concept you could never grasp, I am the storm you invited, I decide when it breaks, look at the sky, I slash off your eyes.";
+  "You burned my people. You broke our code. Now you face what remains… the Ghost.";
   const SUBTITLE_START = 10; // frames to wait before starting subtitles
-  const SUBTITLE_DURATION = 1800; // 30 seconds in frames (60fps)
-  const CHAR_SPEED = 7; // frames per character
+  const CHAR_SPEED = 5; // frames per character (lower = faster typing)
+  const SUBTITLE_DURATION = LYRICS.length * CHAR_SPEED + 60; // Typewriter time + short hold
+  const INTRO_END_TIME = SUBTITLE_START + SUBTITLE_DURATION;
 
   useEffect(() => {
     cleanupRef.current = false;
     return () => {
       cleanupRef.current = true;
+      if (introAudioRef.current) {
+        introAudioRef.current.pause();
+        introAudioRef.current.currentTime = 0;
+        introAudioRef.current = null;
+      }
     };
   }, []);
 
@@ -32,14 +39,29 @@ export default function IntroScreen({ gameState }) {
 
     const audio = new Audio("/assets/audio.mp3");
     audio.volume = 0.6;
+    introAudioRef.current = audio;
     audio.play().catch((err) => console.log("Audio play failed:", err));
   }, []);
 
+  const stopIntroAudio = () => {
+    if (introAudioRef.current) {
+      introAudioRef.current.pause();
+      introAudioRef.current.currentTime = 0;
+      introAudioRef.current = null;
+    }
+  };
+
+  const handleSkipIntro = () => {
+    stopIntroAudio();
+    gameState.setScreen("tutorial");
+  };
+
   useEffect(() => {
-    if (time > 1800 && !cleanupRef.current) {
+    if (time >= INTRO_END_TIME && !cleanupRef.current) {
+      stopIntroAudio();
       gameState.setScreen("tutorial");
     }
-  }, [time, gameState]);
+  }, [time, gameState, INTRO_END_TIME]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -107,8 +129,8 @@ export default function IntroScreen({ gameState }) {
           style={{
             position: "absolute",
             bottom: "80px",
-            width: "80%",
-            left: "10%",
+            width: "50%",
+            left: "25%",
             textAlign: "center",
             fontFamily: "'Press Start 2P', serif",
             fontSize: "10px",
@@ -124,38 +146,39 @@ export default function IntroScreen({ gameState }) {
         </div>
       )}
 
-      {/* Skip Intro Button */}
-      <div
-        onClick={() => gameState.setScreen("tutorial")}
-        style={{
-          position: "absolute",
-          bottom: "30px",
-          right: "30px",
-          padding: "10px 20px",
-          backgroundColor: "rgba(0, 0, 0, 0.7)",
-          border: "2px solid #fff",
-          color: "#fff",
-          fontFamily: "'Noto Sans JP', sans-serif",
-          fontSize: "14px",
-          fontWeight: "900",
-          cursor: "pointer",
-          borderRadius: "4px",
-          zIndex: 100,
-          transition: "all 0.2s",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = "#fff";
-          e.currentTarget.style.color = "#000";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
-          e.currentTarget.style.color = "#fff";
-        }}>
-        SKIP INTRO ➔
-      </div>
+      {time < INTRO_END_TIME && (
+        <div
+          onClick={handleSkipIntro}
+          style={{
+            position: "absolute",
+            bottom: "30px",
+            right: "30px",
+            padding: "10px 20px",
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            border: "2px solid #fff",
+            color: "#fff",
+            fontFamily: "'Noto Sans JP', sans-serif",
+            fontSize: "14px",
+            fontWeight: "900",
+            cursor: "pointer",
+            borderRadius: "4px",
+            zIndex: 100,
+            transition: "all 0.2s",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "#fff";
+            e.currentTarget.style.color = "#000";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+            e.currentTarget.style.color = "#fff";
+          }}>
+          SKIP INTRO ➔
+        </div>
+      )}
     </div>
   );
 }
