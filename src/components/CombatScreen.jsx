@@ -545,6 +545,8 @@ export default function CombatScreen({ gameState, sounds }) {
       onClick={handleClick}>
       <Background />
 
+      {/* Shake animation is applied to container via className */}
+
       {/* HUD */}
       {!isDead && !isPlayerDead && (
         <>
