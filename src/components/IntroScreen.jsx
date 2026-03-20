@@ -14,9 +14,9 @@ export default function IntroScreen({ gameState }) {
 
   const LYRICS =
   "You burned my people. You broke our code. Now you face what remains… the Ghost.";
-  const SUBTITLE_START = 10; // frames to wait before starting subtitles
-  const SUBTITLE_DURATION = 1800; // 30 seconds in frames (60fps)
-  const CHAR_SPEED = 13; // frames per character
+  const SUBTITLE_START = 3; // frames to wait before starting subtitles
+  const SUBTITLE_DURATION = 1000; // 30 seconds in frames (60fps)
+  const CHAR_SPEED = 5; // frames per character (lower = faster typing)
 
   useEffect(() => {
     cleanupRef.current = false;
@@ -119,8 +119,8 @@ export default function IntroScreen({ gameState }) {
           style={{
             position: "absolute",
             bottom: "80px",
-            width: "80%",
-            left: "10%",
+            width: "50%",
+            left: "25%",
             textAlign: "center",
             fontFamily: "'Press Start 2P', serif",
             fontSize: "10px",
@@ -136,38 +136,39 @@ export default function IntroScreen({ gameState }) {
         </div>
       )}
 
-      {/* Skip Intro Button */}
-      <div
-        onClick={handleSkipIntro}
-        style={{
-          position: "absolute",
-          bottom: "30px",
-          right: "30px",
-          padding: "10px 20px",
-          backgroundColor: "rgba(0, 0, 0, 0.7)",
-          border: "2px solid #fff",
-          color: "#fff",
-          fontFamily: "'Noto Sans JP', sans-serif",
-          fontSize: "14px",
-          fontWeight: "900",
-          cursor: "pointer",
-          borderRadius: "4px",
-          zIndex: 100,
-          transition: "all 0.2s",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = "#fff";
-          e.currentTarget.style.color = "#000";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
-          e.currentTarget.style.color = "#fff";
-        }}>
-        SKIP INTRO ➔
-      </div>
+      {time < SUBTITLE_START + SUBTITLE_DURATION && (
+        <div
+          onClick={handleSkipIntro}
+          style={{
+            position: "absolute",
+            bottom: "30px",
+            right: "30px",
+            padding: "10px 20px",
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            border: "2px solid #fff",
+            color: "#fff",
+            fontFamily: "'Noto Sans JP', sans-serif",
+            fontSize: "14px",
+            fontWeight: "900",
+            cursor: "pointer",
+            borderRadius: "4px",
+            zIndex: 100,
+            transition: "all 0.2s",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "#fff";
+            e.currentTarget.style.color = "#000";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+            e.currentTarget.style.color = "#fff";
+          }}>
+          SKIP INTRO ➔
+        </div>
+      )}
     </div>
   );
 }
