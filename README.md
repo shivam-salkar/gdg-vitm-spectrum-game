@@ -9,6 +9,7 @@ Follow these steps to get the game running locally on your machine.
 ### Prerequisites
 
 Ensure you have the following installed:
+
 - [Node.js](https://nodejs.org/) (Recommended: Node 20+, though the game works on Node 25)
 - `npm` (comes with Node.js)
 
@@ -33,6 +34,7 @@ npm run dev
 ```
 
 This will start the local server. You should see output similar to this:
+
 ```
   VITE v8.0.0  ready in X ms
   ➜  Local:   http://localhost:5173/
@@ -45,6 +47,12 @@ Open your web browser and navigate to the Local URL provided in the terminal (us
 - **Warning**: Audio auto-plays dynamically on the intro screen.
 - Maximize the window for the best responsive pixel-art scaling!
 
+### Gameplay Notes
+
+- Click to attack when the attack prompt appears.
+- If you wait around 3 seconds while idle, the enemy will auto-attack.
+- During enemy attacks, the hero plays a short hit reaction and then returns to a steady idle pose.
+
 ### Build for Production
 
 If you want to build the static site for production deployment:
@@ -52,9 +60,11 @@ If you want to build the static site for production deployment:
 ```bash
 npm run build
 ```
+
 This will compile the game into the `dist/` directory.
 
 You can preview the built production site locally by running:
+
 ```bash
 npm run preview
 ```

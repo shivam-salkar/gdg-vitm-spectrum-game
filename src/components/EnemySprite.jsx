@@ -1,128 +1,120 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, memo } from "react";
 import "../game.css";
 
+const FRAME_W = 128;
+const FRAME_H = 128;
+const SCALE   = 3;
+
 const ANIMATIONS = {
-  idle: { url: "/assets/Samurai_Commander/Idle.png", frames: 5, speed: 0.03 },
-  walk: { url: "/assets/Samurai_Commander/Walk.png", frames: 9, speed: 0.1 },
-  run: { url: "/assets/Samurai_Commander/Run.png", frames: 8, speed: 0.15 },
-  attack1: {
-    url: "/assets/Samurai_Commander/Attack_1.png",
-    frames: 4,
-    speed: 0.15,
-  },
-  attack2: {
-    url: "/assets/Samurai_Commander/Attack_2.png",
-    frames: 5,
-    speed: 0.15,
-  },
-  attack3: {
-    url: "/assets/Samurai_Commander/Attack_3.png",
-    frames: 4,
-    speed: 0.15,
-  },
-  protect: {
-    url: "/assets/Samurai_Commander/Protect.png",
-    frames: 2,
-    speed: 0.03,
-  },
-  hit: { url: "/assets/Samurai_Commander/Hurt.png", frames: 2, speed: 0.15 },
-  death: { url: "/assets/Samurai_Commander/Dead.png", frames: 6, speed: 0.1 },
+  idle:    { url: "/assets/Samurai_Commander/Idle.png",    frames: 5, fps: 8 },
+  walk:    { url: "/assets/Samurai_Commander/Walk.png",    frames: 9, fps: 10 },
+  run:     { url: "/assets/Samurai_Commander/Run.png",     frames: 8, fps: 14 },
+  attack1: { url: "/assets/Samurai_Commander/Attack_1.png",frames: 4, fps: 12 },
+  attack2: { url: "/assets/Samurai_Commander/Attack_2.png",frames: 5, fps: 12 },
+  attack3: { url: "/assets/Samurai_Commander/Attack_3.png",frames: 4, fps: 12 },
+  protect: { url: "/assets/Samurai_Commander/Protect.png", frames: 2, fps: 8 },
+  hit:     { url: "/assets/Samurai_Commander/Hurt.png",    frames: 2, fps: 10 },
+  death:   { url: "/assets/Samurai_Commander/Dead.png",    frames: 6, fps: 8  },
 };
 
-export default function EnemySprite({
-  x,
-  y,
-  scale = 3,
-  phase = "idle",
-  anchor = 0.5,
-  isFlash = false,
-}) {
-  const currentAction = ANIMATIONS[phase] || ANIMATIONS.idle;
-  const [isLoaded, setIsLoaded] = useState(false);
-  const spriteRef = useRef(null);
-  const frameRef = useRef(0);
-  const timeRef = useRef(0);
-
-  useEffect(() => {
+// Pre-load all frames once
+const preloaded = {};
+Object.values(ANIMATIONS).forEach(({ url }) => {
+  if (!preloaded[url]) {
     const img = new Image();
-    img.onload = () => setIsLoaded(true);
-    img.src = currentAction.url;
-  }, [currentAction.url]);
+    img.src = url;
+    preloaded[url] = img;
+  }
+});
 
-  // Reset frame when phase changes
+function EnemySprite({ x, y, phase = "idle", isFlash = false }) {
+  const anim      = ANIMATIONS[phase] || ANIMATIONS.idle;
+  const spriteRef = useRef(null);
+  const stateRef  = useRef({ frame: 0, elapsed: 0, last: null, phase });
+
   useEffect(() => {
-    frameRef.current = 0;
-    timeRef.current = 0;
+    stateRef.current.frame   = 0;
+    stateRef.current.elapsed = 0;
+    stateRef.current.last    = null;
+    stateRef.current.phase   = phase;
   }, [phase]);
 
+  // Set up background image and size once when animation changes
   useEffect(() => {
-    if (!isLoaded || !spriteRef.current) return;
+    const el = spriteRef.current;
+    if (el && anim) {
+      el.style.backgroundImage = `url('${anim.url}')`;
+      el.style.backgroundSize = `${anim.frames * FRAME_W * SCALE}px ${FRAME_H * SCALE}px`;
+    }
+  }, [anim.url, anim.frames]);
 
-    let animationId;
+  // Animate frame positions
+  useEffect(() => {
+    const { frames, fps } = anim;
+    const frameDur = 1000 / fps;
+    let id;
 
-    const animate = () => {
-      timeRef.current += 1;
+    const tick = (ts) => {
+      const s = stateRef.current;
+      if (s.last === null) s.last = ts;
+      const dt = ts - s.last;
+      s.last = ts;
 
-      // Advance frame based on speed
-      if (timeRef.current >= 1 / currentAction.speed) {
-        let nextFrame = frameRef.current + 1;
-        if (phase === "death" && nextFrame >= currentAction.frames) {
-          nextFrame = currentAction.frames - 1; // Stay on last frame
-        } else {
-          nextFrame = nextFrame % currentAction.frames;
+      if (s.phase === phase) {
+        s.elapsed += dt;
+        if (s.elapsed >= frameDur) {
+          s.elapsed -= frameDur;
+          s.frame = phase === "death"
+            ? Math.min(s.frame + 1, frames - 1)
+            : (s.frame + 1) % frames;
+          
+          // Update DOM only when frame changes
+          const el = spriteRef.current;
+          if (el) {
+            el.style.backgroundPositionX = `-${s.frame * FRAME_W * SCALE}px`;
+          }
         }
-        frameRef.current = nextFrame;
-        timeRef.current = 0;
       }
 
-      const frameWidth = 128;
-      const offsetX = frameRef.current * frameWidth * scale;
-
-      if (spriteRef.current) {
-        spriteRef.current.style.backgroundPositionX = `-${offsetX}px`;
-      }
-
-      animationId = requestAnimationFrame(animate);
+      id = requestAnimationFrame(tick);
     };
 
-    animationId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationId);
-  }, [isLoaded, currentAction.frames, currentAction.speed, scale]);
+    id = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(id);
+  }, [anim, phase]);
 
-  const frameWidth = 128;
-  const frameHeight = 128;
-  const totalWidth = frameWidth * currentAction.frames;
-
-  const offsetX = -frameWidth * anchor;
-  const offsetY = -frameHeight * anchor;
+  const anchorOffX = -(FRAME_W / 2) * SCALE;
+  const anchorOffY = -(FRAME_H / 2) * SCALE;
 
   return (
     <div
       style={{
-        position: "absolute",
-        left: `${x}px`,
-        top: `${y}px`,
-        width: `${frameWidth * scale}px`,
-        height: `${frameHeight * scale}px`,
-        transform: `translate(${offsetX * scale}px, ${offsetY * scale}px) scaleX(-1)`,
-        overflow: "visible",
-        filter: isFlash ? "brightness(1.5)" : "brightness(1)",
-        transition: isFlash ? "filter 0.1s" : "filter 0.2s",
-      }}>
-      {isLoaded && (
-        <div
-          ref={spriteRef}
-          style={{
-            backgroundImage: `url('${currentAction.url}')`,
-            backgroundSize: `${totalWidth * scale}px ${frameHeight * scale}px`,
-            backgroundPosition: "0 0",
-            backgroundRepeat: "no-repeat",
-            width: "100%",
-            height: "100%",
-            imageRendering: "pixelated",
-          }}
-        />
-      )}
+        position:   "absolute",
+        left:       `${x}px`,
+        top:        `${y}px`,
+        width:      `${FRAME_W * SCALE}px`,
+        height:     `${FRAME_H * SCALE}px`,
+        // flip enemy to face left
+        transform:  `translate(${anchorOffX}px, ${anchorOffY}px) scaleX(-1)`,
+        overflow:   "visible",
+        willChange: "transform",
+        filter:     isFlash ? "brightness(2)" : "brightness(1)",
+        transition: "filter 0.1s",
+      }}
+    >
+      <div
+        ref={spriteRef}
+        style={{
+          width:            "100%",
+          height:           "100%",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "0 0",
+          imageRendering:   "pixelated",
+          willChange:       "background-position",
+        }}
+      />
     </div>
   );
 }
+
+export default memo(EnemySprite);

@@ -1,23 +1,10 @@
 import { useState, useCallback } from "react";
-import { CONFIG } from "../constants/gameConfig.js";
-
-const VALID_START_SCREENS = new Set(["loading", "intro"]);
-
-const envStartScreen = String(import.meta.env.VITE_START_SCREEN || "")
-  .trim()
-  .toLowerCase();
-
-const fallbackStartScreen = import.meta.env.DEV ? "intro" : "loading";
-
-const INITIAL_SCREEN = VALID_START_SCREENS.has(envStartScreen)
-  ? envStartScreen
-  : fallbackStartScreen;
 
 const initialState = {
-  screen: INITIAL_SCREEN, // "loading" | "intro" | "tutorial" | "combat" | "reward"
-  enemyHP: CONFIG.ENEMY_MAX_HP,
-  playerHP: CONFIG.PLAYER_MAX_HP,
-  phase: "idle", // "idle" | "readyToAttack" | "running" | "attacking" | "hit" | "death"
+  screen: "loading", // "loading" | "intro" | "tutorial" | "combat" | "reward"
+  enemyHP: 100,
+  playerHP: 100,
+  phase: "idle", // "idle" | "readyToAttack" | "running" | "attacking" | "hit" | "death" | "enemyAttacking" | "playerDead"
   attackType: null, // "attack1" | "attack2" | "attack3"
   clickCount: 0,
 };
@@ -49,8 +36,19 @@ export function useGameState() {
     });
   }, []);
 
+  const doPlayerDamage = useCallback((amount) => {
+    setState((s) => {
+      const newHP = Math.max(0, s.playerHP - amount);
+      return {
+        ...s,
+        playerHP: newHP,
+        phase: newHP <= 0 ? "playerDead" : s.phase,
+      };
+    });
+  }, []);
+
   const resetGame = useCallback(() => {
-    setState({ ...initialState, screen: INITIAL_SCREEN });
+    setState({ ...initialState, screen: "loading" });
   }, []);
 
   return {
@@ -59,6 +57,7 @@ export function useGameState() {
     setPhase,
     setAttackType,
     doDamage,
+    doPlayerDamage,
     resetGame,
   };
 }
