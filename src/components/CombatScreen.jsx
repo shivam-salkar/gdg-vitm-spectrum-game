@@ -4,6 +4,7 @@ import PlayerSprite from "./PlayerSprite.jsx";
 import EnemySprite from "./EnemySprite.jsx";
 import HealthBar from "./HealthBar.jsx";
 import AttackPopup from "./AttackPopup.jsx";
+import { SPRITE_POSITIONS } from "../constants/gameConfig.js";
 import "../game.css";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -35,43 +36,45 @@ function smoothMove(getX, setX, targetX, durationMs, onDone) {
 // ─── component ──────────────────────────────────────────────────────────────
 export default function CombatScreen({ gameState, sounds }) {
   // Sprite positions stored as refs for smooth rAF movement (no re-render per frame)
-  const playerXRef = useRef(220);
-  const enemyXRef  = useRef(680);
+  const playerXRef = useRef(SPRITE_POSITIONS.PLAYER_HOME_X);
+  const enemyXRef = useRef(SPRITE_POSITIONS.ENEMY_HOME_X);
 
   // React state for positions only used to drive the DOM style (updated via rAF)
-  const [playerPos, setPlayerPos] = useState(220);
-  const [enemyPos,  setEnemyPos]  = useState(680);
+  const [playerPos, setPlayerPos] = useState(SPRITE_POSITIONS.PLAYER_HOME_X);
+  const [enemyPos, setEnemyPos] = useState(SPRITE_POSITIONS.ENEMY_HOME_X);
 
   // Sprite animation phases
   const [playerPhase, setPlayerPhase] = useState("idle");
-  const [enemyPhase,  setEnemyPhase]  = useState("idle");
+  const [enemyPhase, setEnemyPhase] = useState("idle");
 
   // Visual FX
-  const [slashActive,     setSlashActive]     = useState(false);
-  const [slashPos,        setSlashPos]        = useState({ x: 0, y: 0 });
-  const [flashWhite,      setFlashWhite]      = useState(false);
-  const [screenDarken,    setScreenDarken]    = useState(false);
-  const [shakeClass,      setShakeClass]      = useState(""); // "" | "screen-shake" | "player-shake"
+  const [slashActive, setSlashActive] = useState(false);
+  const [slashPos, setSlashPos] = useState({ x: 0, y: 0 });
+  const [flashWhite, setFlashWhite] = useState(false);
+  const [screenDarken, setScreenDarken] = useState(false);
+  const [shakeClass, setShakeClass] = useState(""); // "" | "screen-shake" | "player-shake"
   const [showAttackPopup, setShowAttackPopup] = useState(false);
 
   // Display overrides (hit / death overlays)
   const [displayPlayerPhase, setDisplayPlayerPhase] = useState("idle");
-  const [displayEnemyPhase,  setDisplayEnemyPhase]  = useState("idle");
+  const [displayEnemyPhase, setDisplayEnemyPhase] = useState("idle");
   const [freezePlayer, setFreezePlayer] = useState(false);
 
   // Damage numbers
   const [dmgPopup, setDmgPopup] = useState(null); // { value, side: "player"|"enemy", id }
 
-  const busyRef    = useRef(false); // prevent double-click during sequence
+  const busyRef = useRef(false); // prevent double-click during sequence
   const lockPlayerPosRef = useRef(false); // prevent hero position changes during enemy attack
   const idleAttackTimerRef = useRef(null);
   const cancelMove = useRef(null);
-  const timers     = useRef([]);
-  const mounted    = useRef(true);
+  const timers = useRef([]);
+  const mounted = useRef(true);
 
   // ── safe timer helpers ───────────────────────────────────────────────────
   const after = useCallback((ms, fn) => {
-    const id = setTimeout(() => { if (mounted.current) fn(); }, ms);
+    const id = setTimeout(() => {
+      if (mounted.current) fn();
+    }, ms);
     timers.current.push(id);
     return id;
   }, []);
@@ -125,6 +128,8 @@ export default function CombatScreen({ gameState, sounds }) {
     if (gameState.phase === "playerDead") {
       lockPlayerPosRef.current = false;
       setFreezePlayer(false);
+      setEnemyPhase("idle");
+      setDisplayEnemyPhase("idle");
       setDisplayPlayerPhase("death");
       setScreenDarken(true);
       after(3000, () => {
@@ -149,11 +154,14 @@ export default function CombatScreen({ gameState, sounds }) {
   }, []);
 
   // ── show floating damage number ──────────────────────────────────────────
-  const showDmg = useCallback((value, side) => {
-    const id = Date.now();
-    setDmgPopup({ value, side, id });
-    after(900, () => setDmgPopup(null));
-  }, [after]);
+  const showDmg = useCallback(
+    (value, side) => {
+      const id = Date.now();
+      setDmgPopup({ value, side, id });
+      after(900, () => setDmgPopup(null));
+    },
+    [after],
+  );
 
   // ── enemy auto-attack when player stays idle ─────────────────────────────
   const runEnemyAttack = useCallback(() => {
@@ -165,9 +173,9 @@ export default function CombatScreen({ gameState, sounds }) {
     // Force player to steady home position
     lockPlayerPosRef.current = false;
     setFreezePlayer(false);
-    setPlayerX(220);
-    playerXRef.current = 220;
-    setPlayerPos(220);
+    setPlayerX(SPRITE_POSITIONS.PLAYER_HOME_X);
+    playerXRef.current = SPRITE_POSITIONS.PLAYER_HOME_X;
+    setPlayerPos(SPRITE_POSITIONS.PLAYER_HOME_X);
     lockPlayerPosRef.current = true;
     setFreezePlayer(true);
 
@@ -175,16 +183,16 @@ export default function CombatScreen({ gameState, sounds }) {
     setEnemyPhase("run");
     setDisplayEnemyPhase("run");
 
-    const enemyStartX  = enemyXRef.current;
-    const enemyTargetX = 430;
-    const enemyRunDur  = 400;
+    const enemyStartX = enemyXRef.current;
+    const enemyTargetX = 400; // Mirror distance from player
+    const enemyRunDur = 150;
     let eRunStart = null;
     let eRunId;
     const eRunTick = (ts) => {
       if (!eRunStart) eRunStart = ts;
-      const t    = Math.min(1, (ts - eRunStart) / enemyRunDur);
+      const t = Math.min(1, (ts - eRunStart) / enemyRunDur);
       const ease = 1 - Math.pow(1 - t, 3);
-      const nx   = enemyStartX + (enemyTargetX - enemyStartX) * ease;
+      const nx = enemyStartX + (enemyTargetX - enemyStartX) * ease;
       enemyXRef.current = nx;
       setEnemyPos(nx);
       if (t < 1) eRunId = requestAnimationFrame(eRunTick);
@@ -209,6 +217,28 @@ export default function CombatScreen({ gameState, sounds }) {
 
         setFreezePlayer(true);
         setDisplayPlayerPhase("hit");
+
+        // Knockback effect
+        const hitStartX = playerXRef.current;
+        const knockbackDist = 40;
+        const knockbackDur = 150;
+        let kbStart = null;
+        let kbId;
+        const kbTick = (ts) => {
+          if (!kbStart) kbStart = ts;
+          const t = Math.min(1, (ts - kbStart) / knockbackDur);
+          const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+          const kbX = hitStartX - knockbackDist * ease;
+          playerXRef.current = kbX;
+          setPlayerPos(kbX);
+          if (t < 1) kbId = requestAnimationFrame(kbTick);
+          else {
+            playerXRef.current = hitStartX;
+            setPlayerPos(hitStartX);
+          }
+        };
+        kbId = requestAnimationFrame(kbTick);
+
         after(1200, () => {
           if (!mounted.current) return;
           setDisplayPlayerPhase("idle");
@@ -233,14 +263,14 @@ export default function CombatScreen({ gameState, sounds }) {
             setDisplayEnemyPhase("idle");
 
             const eRetStart = enemyXRef.current;
-            const eHomeX = 680;
+            const eHomeX = SPRITE_POSITIONS.ENEMY_HOME_X;
             let eRetS = null;
             let eRetId;
             const eRetTick = (ts) => {
               if (!eRetS) eRetS = ts;
-              const t    = Math.min(1, (ts - eRetS) / 320);
+              const t = Math.min(1, (ts - eRetS) / 320);
               const ease = 1 - Math.pow(1 - t, 3);
-              const nx   = eRetStart + (eHomeX - eRetStart) * ease;
+              const nx = eRetStart + (eHomeX - eRetStart) * ease;
               enemyXRef.current = nx;
               setEnemyPos(nx);
               if (t < 1) eRetId = requestAnimationFrame(eRetTick);
@@ -271,7 +301,8 @@ export default function CombatScreen({ gameState, sounds }) {
 
     if (gameState.phase === "readyToAttack" && !busyRef.current) {
       setFreezePlayer(true);
-      idleAttackTimerRef.current = after(3000, () => {
+      const randomDelay = rand(5000, 10000); // Random delay between 5-10 seconds
+      idleAttackTimerRef.current = after(randomDelay, () => {
         if (!mounted.current) return;
         if (gameState.phase !== "readyToAttack") return;
         runEnemyAttack();
@@ -297,18 +328,18 @@ export default function CombatScreen({ gameState, sounds }) {
     // ── 1. Player runs toward enemy ────────────────────────────────────────
     setPlayerPhase("run");
     setDisplayPlayerPhase("run");
-    setDisplayEnemyPhase("protect");  // enemy braces
+    setDisplayEnemyPhase("protect"); // enemy braces
     setEnemyPhase("protect");
 
-    const startX   = playerXRef.current;
-    const targetX  = 460;
-    const runDur   = 420; // ms
+    const startX = playerXRef.current;
+    const targetX = 730; // Move toward center
+    const runDur = 170; // ms
 
     let moveStart = null;
     let moveId;
     const moveTick = (ts) => {
       if (!moveStart) moveStart = ts;
-      const t    = Math.min(1, (ts - moveStart) / runDur);
+      const t = Math.min(1, (ts - moveStart) / runDur);
       const ease = 1 - Math.pow(1 - t, 3);
       const newX = startX + (targetX - startX) * ease;
       playerXRef.current = newX;
@@ -367,14 +398,15 @@ export default function CombatScreen({ gameState, sounds }) {
             setDisplayPlayerPhase("idle");
 
             const playerReturnStart = playerXRef.current;
-            const playerHomeX = 220;
+            const playerHomeX = SPRITE_POSITIONS.PLAYER_HOME_X;
             let retStart = null;
             let retId;
             const retTick = (ts) => {
               if (!retStart) retStart = ts;
-              const t    = Math.min(1, (ts - retStart) / 300);
+              const t = Math.min(1, (ts - retStart) / 300);
               const ease = 1 - Math.pow(1 - t, 3);
-              const nx   = playerReturnStart + (playerHomeX - playerReturnStart) * ease;
+              const nx =
+                playerReturnStart + (playerHomeX - playerReturnStart) * ease;
               playerXRef.current = nx;
               setPlayerPos(nx);
               if (t < 1) retId = requestAnimationFrame(retTick);
@@ -401,11 +433,12 @@ export default function CombatScreen({ gameState, sounds }) {
     if (gameState.phase === "readyToAttack") runTurn();
   }, [gameState.phase, runTurn]);
 
-  const isDead       = gameState.phase === "death";
+  const isDead = gameState.phase === "death";
   const isPlayerDead = gameState.phase === "playerDead";
 
   return (
     <div
+      className={shakeClass}
       style={{
         position: "relative",
         width: "100%",
@@ -414,93 +447,153 @@ export default function CombatScreen({ gameState, sounds }) {
         overflow: "hidden",
         cursor: gameState.phase === "readyToAttack" ? "pointer" : "default",
       }}
-      onClick={handleClick}
-    >
+      onClick={handleClick}>
       <Background />
-      
-      {/* Shake overlay (doesn't move sprites) */}
-      {shakeClass && (
-        <div
-          className={shakeClass}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            pointerEvents: "none",
-            zIndex: 50,
-            backgroundColor: "transparent",
-          }}
-        />
-      )}
+
+      {/* Shake animation is applied to container via className */}
 
       {/* HUD */}
       {!isDead && !isPlayerDead && (
         <>
           {/* Player HUD */}
-          <div style={{
-            position: "absolute", left: "50px", top: "20px",
-            display: "flex", alignItems: "center", zIndex: 100,
-          }}>
-            <div style={{
-              width: "128px", height: "128px",
-              backgroundImage: "url('/assets/hero-icon.png')",
-              backgroundSize: "contain", backgroundRepeat: "no-repeat",
-              backgroundPosition: "center", imageRendering: "pixelated",
-              filter: "drop-shadow(0 0 5px rgba(255,255,255,0.5))",
-              marginRight: "-30px", position: "relative", zIndex: 10,
-            }} />
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px", zIndex: 1 }}>
-              <div style={{
-                color: "white", fontSize: "20px",
-                fontFamily: "'Noto Sans JP', sans-serif", fontWeight: "bold",
-                textShadow: "2px 2px 4px black", marginLeft: "30px", letterSpacing: "1px",
-              }}>THE GHOST (YOU)</div>
-              <HealthBar hp={gameState.playerHP} maxHp={100} color="green" width={320} height={22} />
+          <div
+            style={{
+              position: "absolute",
+              left: "50px",
+              top: "20px",
+              display: "flex",
+              alignItems: "center",
+              zIndex: 100,
+            }}>
+            <div
+              style={{
+                width: "128px",
+                height: "128px",
+                backgroundImage: "url('/assets/hero-icon.png')",
+                backgroundSize: "contain",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center",
+                imageRendering: "pixelated",
+                filter: "drop-shadow(0 0 5px rgba(255,255,255,0.5))",
+                marginRight: "-30px",
+                position: "relative",
+                zIndex: 10,
+              }}
+            />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "2px",
+                zIndex: 1,
+              }}>
+              <div
+                style={{
+                  color: "white",
+                  fontSize: "20px",
+                  fontFamily: "'Noto Sans JP', sans-serif",
+                  fontWeight: "bold",
+                  textShadow: "2px 2px 4px black",
+                  marginLeft: "30px",
+                  letterSpacing: "1px",
+                }}>
+                THE GHOST (YOU)
+              </div>
+              <HealthBar
+                hp={gameState.playerHP}
+                maxHp={100}
+                color="green"
+                width={320}
+                height={22}
+              />
             </div>
           </div>
 
           {/* Enemy HUD */}
-          <div style={{
-            position: "absolute", right: "20px", top: "4px",
-            display: "flex", flexDirection: "row-reverse", alignItems: "center", zIndex: 100,
-          }}>
-            <div style={{
-              width: "160px", height: "160px",
-              backgroundImage: "url('/assets/enemy-icon.png')",
-              backgroundSize: "contain", backgroundRepeat: "no-repeat",
-              backgroundPosition: "center", transform: "scaleX(-1)",
-              imageRendering: "pixelated",
-              filter: "drop-shadow(0 0 5px rgba(255,0,0,0.5))",
-              marginLeft: "-40px", position: "relative", zIndex: 10,
-            }} />
-            <div style={{
-              display: "flex", flexDirection: "column", gap: "2px",
-              alignItems: "flex-end", zIndex: 1,
+          <div
+            style={{
+              position: "absolute",
+              right: "20px",
+              top: "4px",
+              display: "flex",
+              flexDirection: "row-reverse",
+              alignItems: "center",
+              zIndex: 100,
             }}>
-              <div style={{
-                color: "white", fontSize: "20px",
-                fontFamily: "'Noto Sans JP', sans-serif", fontWeight: "bold",
-                textShadow: "2px 2px 4px black", marginRight: "40px", letterSpacing: "1px",
-              }}>SAMURAI COMMANDER</div>
-              <HealthBar hp={gameState.enemyHP} maxHp={100} color="enemy" width={320} height={22} />
+            <div
+              style={{
+                width: "160px",
+                height: "160px",
+                backgroundImage: "url('/assets/enemy-icon.png')",
+                backgroundSize: "contain",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center",
+                transform: "scaleX(-1)",
+                imageRendering: "pixelated",
+                filter: "drop-shadow(0 0 5px rgba(255,0,0,0.5))",
+                marginLeft: "-40px",
+                position: "relative",
+                zIndex: 10,
+              }}
+            />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "2px",
+                alignItems: "flex-end",
+                zIndex: 1,
+              }}>
+              <div
+                style={{
+                  color: "white",
+                  fontSize: "20px",
+                  fontFamily: "'Noto Sans JP', sans-serif",
+                  fontWeight: "bold",
+                  textShadow: "2px 2px 4px black",
+                  marginRight: "40px",
+                  letterSpacing: "1px",
+                }}>
+                SAMURAI COMMANDER
+              </div>
+              <HealthBar
+                hp={gameState.enemyHP}
+                maxHp={100}
+                color="enemy"
+                width={320}
+                height={22}
+              />
             </div>
           </div>
         </>
       )}
 
       {/* Player sprite */}
-      <PlayerSprite x={playerPos} y={310} phase={displayPlayerPhase} freeze={freezePlayer} />
+      <PlayerSprite
+        x={playerPos}
+        y={SPRITE_POSITIONS.SPRITE_Y}
+        phase={displayPlayerPhase}
+        freeze={freezePlayer}
+      />
 
       {/* Enemy sprite */}
-      <div style={{
-        position: "absolute", top: 0, left: 0, width: "100%", height: "100%",
-        filter: isDead ? "grayscale(1)" : "none",
-        transition: "filter 0.6s ease-out",
-        willChange: "filter",
-      }}>
-        <EnemySprite x={enemyPos} y={310} phase={displayEnemyPhase} isFlash={false} />
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          filter: isDead ? "grayscale(1)" : "none",
+          transition: "filter 0.6s ease-out",
+          willChange: "filter",
+        }}>
+        <EnemySprite
+          x={enemyPos}
+          y={SPRITE_POSITIONS.SPRITE_Y}
+          phase={displayEnemyPhase}
+          isFlash={false}
+        />
       </div>
 
       {/* Attack popup */}
@@ -518,18 +611,32 @@ export default function CombatScreen({ gameState, sounds }) {
 
       {/* Flash overlay */}
       {flashWhite && (
-        <div className="flash-white" style={{
-          position: "absolute", top: 0, left: 0,
-          width: "100%", height: "100%", pointerEvents: "none",
-        }} />
+        <div
+          className="flash-white"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            pointerEvents: "none",
+          }}
+        />
       )}
 
       {/* Darken overlay (death) */}
       {screenDarken && (
-        <div className="darken-screen" style={{
-          position: "absolute", top: 0, left: 0,
-          width: "100%", height: "100%", pointerEvents: "none",
-        }} />
+        <div
+          className="darken-screen"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            pointerEvents: "none",
+          }}
+        />
       )}
 
       {/* Floating damage number */}
@@ -539,7 +646,10 @@ export default function CombatScreen({ gameState, sounds }) {
           className="damage-popup"
           style={{
             position: "absolute",
-            left: dmgPopup.side === "enemy" ? `${enemyPos - 20}px` : `${playerPos + 20}px`,
+            left:
+              dmgPopup.side === "enemy"
+                ? `${enemyPos - 20}px`
+                : `${playerPos + 20}px`,
             top: "230px",
             color: dmgPopup.side === "enemy" ? "#ff4444" : "#ffaa00",
             fontSize: "40px",
@@ -549,8 +659,7 @@ export default function CombatScreen({ gameState, sounds }) {
             pointerEvents: "none",
             zIndex: 200,
             animation: "dmgFloat 0.9s ease-out forwards",
-          }}
-        >
+          }}>
           -{dmgPopup.value}
         </div>
       )}

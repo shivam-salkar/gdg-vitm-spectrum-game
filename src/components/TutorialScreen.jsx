@@ -3,6 +3,7 @@ import Background from "./Background.jsx";
 import PlayerSprite from "./PlayerSprite.jsx";
 import EnemySprite from "./EnemySprite.jsx";
 import Particles from "./Particles.jsx";
+import { SPRITE_POSITIONS } from "../constants/gameConfig.js";
 import "../game.css";
 
 export default function TutorialScreen({ gameState }) {
@@ -63,8 +64,16 @@ export default function TutorialScreen({ gameState }) {
       onClick={handleClick}>
       <Background />
 
-      <PlayerSprite x={300} y={290} phase="idle" />
-      <EnemySprite x={680} y={290} phase="idle" />
+      <PlayerSprite
+        x={SPRITE_POSITIONS.PLAYER_HOME_X}
+        y={SPRITE_POSITIONS.SPRITE_Y}
+        phase="idle"
+      />
+      <EnemySprite
+        x={SPRITE_POSITIONS.ENEMY_HOME_X}
+        y={SPRITE_POSITIONS.SPRITE_Y}
+        phase="idle"
+      />
 
       <div
         style={{

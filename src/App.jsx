@@ -202,6 +202,57 @@ export default function App() {
           {screen === "reward" && <RewardScreen gameState={gameState} />}
         </div>
       </div>
+
+      {/* Fullscreen Button - Fixed Position */}
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const elem = document.documentElement;
+          try {
+            if (elem.requestFullscreen) {
+              elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+              elem.webkitRequestFullscreen();
+            } else if (elem.mozRequestFullScreen) {
+              elem.mozRequestFullScreen();
+            } else if (elem.msRequestFullscreen) {
+              elem.msRequestFullscreen();
+            }
+          } catch (err) {
+            console.log("Fullscreen request failed:", err);
+          }
+        }}
+        style={{
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          width: "50px",
+          height: "50px",
+          backgroundColor: "transparent",
+          border: "none",
+          borderRadius: "8px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 99999,
+          backgroundImage: "url('/assets/fullscreen_button.png')",
+          backgroundSize: "contain",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "center",
+          transition: "all 0.2s",
+          pointerEvents: "auto",
+          opacity: 0.8,
+          imageRendering: "pixelated",
+        }}
+        onMouseOver={(e) => {
+          e.currentTarget.style.opacity = "1";
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.opacity = "0.8";
+        }}
+        title="Fullscreen"></button>
     </>
   );
 }
