@@ -100,15 +100,18 @@ function PlayerSprite({ x, y, phase = "idle", freeze = false }) {
   const anchorOffX = -(FRAME_W / 2) * SCALE;
   const anchorOffY = -(FRAME_H / 2) * SCALE;
 
+  const translateX = x + anchorOffX;
+  const translateY = y + anchorOffY;
+
   return (
     <div
       style={{
-        position: "absolute",
-        left: `${x}px`,
-        top: `${y}px`,
-        width: `${FRAME_W * SCALE}px`,
-        height: `${FRAME_H * SCALE}px`,
-        transform: `translate(${anchorOffX}px, ${anchorOffY}px)`,
+        position:  "absolute",
+        left:      0,
+        top:       0,
+        width:     `${FRAME_W * SCALE}px`,
+        height:    `${FRAME_H * SCALE}px`,
+        transform: `translate3d(${translateX}px, ${translateY}px, 0) scale(${phaseScale})`,
         transformOrigin: "center center",
         overflow: "visible",
         willChange: "transform",
