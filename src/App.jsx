@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useGameState } from "./hooks/useGameState.js";
 import { usePixiSound } from "./hooks/usePixiSound.js";
 import { CONFIG } from "./constants/gameConfig.js";
@@ -38,6 +38,24 @@ export default function App() {
   const sounds = usePixiSound();
   const [assetsLoaded, setAssetsLoaded] = useState(false);
   const [scale, setScale] = useState(1);
+  const fullscreenRequestedRef = useRef(false);
+
+  const requestFullscreen = useCallback(() => {
+    const elem = document.documentElement;
+    try {
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+      } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+      } else if (elem.mozRequestFullScreen) {
+        elem.mozRequestFullScreen();
+      } else if (elem.msRequestFullscreen) {
+        elem.msRequestFullscreen();
+      }
+    } catch (err) {
+      console.log("Fullscreen request failed:", err);
+    }
+  }, []);
 
   useEffect(() => {
     async function loadAssets() {
@@ -61,6 +79,23 @@ export default function App() {
     }
     loadAssets();
   }, []);
+
+  useEffect(() => {
+    const handleFirstInteraction = () => {
+      if (fullscreenRequestedRef.current) return;
+      fullscreenRequestedRef.current = true;
+      requestFullscreen();
+      window.removeEventListener("pointerdown", handleFirstInteraction, true);
+      window.removeEventListener("keydown", handleFirstInteraction, true);
+    };
+
+    window.addEventListener("pointerdown", handleFirstInteraction, true);
+    window.addEventListener("keydown", handleFirstInteraction, true);
+    return () => {
+      window.removeEventListener("pointerdown", handleFirstInteraction, true);
+      window.removeEventListener("keydown", handleFirstInteraction, true);
+    };
+  }, [requestFullscreen]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -208,20 +243,7 @@ export default function App() {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          const elem = document.documentElement;
-          try {
-            if (elem.requestFullscreen) {
-              elem.requestFullscreen();
-            } else if (elem.webkitRequestFullscreen) {
-              elem.webkitRequestFullscreen();
-            } else if (elem.mozRequestFullScreen) {
-              elem.mozRequestFullScreen();
-            } else if (elem.msRequestFullscreen) {
-              elem.msRequestFullscreen();
-            }
-          } catch (err) {
-            console.log("Fullscreen request failed:", err);
-          }
+          requestFullscreen();
         }}
         style={{
           position: "fixed",

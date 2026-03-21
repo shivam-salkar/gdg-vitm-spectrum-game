@@ -252,7 +252,7 @@ export default function CombatScreen({ gameState, sounds }) {
         setShakeClass("screen-shake");
         after(280, () => setShakeClass(""));
 
-        const eDmg = rand(22, 34);
+        const eDmg = 14;
         gameState.doPlayerDamage(eDmg);
         showDmg(eDmg, "player");
         if (navigator.vibrate) navigator.vibrate(120);
@@ -306,7 +306,7 @@ export default function CombatScreen({ gameState, sounds }) {
 
     if (gameState.phase === "readyToAttack" && !busyRef.current) {
       setFreezePlayer(true);
-      const idleDelay = 3000;
+      const idleDelay = 1500;
       idleAttackTimerRef.current = after(idleDelay, () => {
         if (!mounted.current) return;
         if (gameState.phase !== "readyToAttack") return;
@@ -381,7 +381,7 @@ export default function CombatScreen({ gameState, sounds }) {
         after(300, () => setShakeClass(""));
 
         // Deal damage
-        const dmg = 25;
+        const dmg = 15;
         gameState.doDamage(dmg);
         showDmg(dmg, "enemy");
         if (navigator.vibrate) navigator.vibrate(180);
