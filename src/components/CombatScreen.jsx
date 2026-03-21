@@ -499,12 +499,11 @@ export default function CombatScreen({ gameState, sounds }) {
                 zIndex: 1,
               }}>
               <div
+                className="pixel-text pixel-text--soft"
                 style={{
                   color: "white",
-                  fontSize: "20px",
-                  fontFamily: "'Noto Sans JP', sans-serif",
+                  fontSize: "12px",
                   fontWeight: "bold",
-                  textShadow: "2px 2px 4px black",
                   marginLeft: "30px",
                   letterSpacing: "1px",
                 }}>
@@ -514,8 +513,9 @@ export default function CombatScreen({ gameState, sounds }) {
                 hp={gameState.playerHP}
                 maxHp={100}
                 color="green"
-                width={320}
+                width={270}
                 height={22}
+                style={{ marginLeft: "-12px" }}
               />
             </div>
           </div>
@@ -525,7 +525,7 @@ export default function CombatScreen({ gameState, sounds }) {
             style={{
               position: "absolute",
               right: "20px",
-              top: "4px",
+              top: "20px",
               display: "flex",
               flexDirection: "row-reverse",
               alignItems: "center",
@@ -533,8 +533,8 @@ export default function CombatScreen({ gameState, sounds }) {
             }}>
             <div
               style={{
-                width: "160px",
-                height: "160px",
+                width: "128px",
+                height: "128px",
                 backgroundImage: "url('/assets/enemy-icon.png')",
                 backgroundSize: "contain",
                 backgroundRepeat: "no-repeat",
@@ -542,7 +542,7 @@ export default function CombatScreen({ gameState, sounds }) {
                 transform: "scaleX(-1)",
                 imageRendering: "pixelated",
                 filter: "drop-shadow(0 0 5px rgba(255,0,0,0.5))",
-                marginLeft: "-40px",
+                marginLeft: "-30px",
                 position: "relative",
                 zIndex: 10,
               }}
@@ -556,23 +556,23 @@ export default function CombatScreen({ gameState, sounds }) {
                 zIndex: 1,
               }}>
               <div
+                className="pixel-text pixel-text--soft"
                 style={{
                   color: "white",
-                  fontSize: "20px",
-                  fontFamily: "'Noto Sans JP', sans-serif",
+                  fontSize: "12px",
                   fontWeight: "bold",
-                  textShadow: "2px 2px 4px black",
                   marginRight: "40px",
                   letterSpacing: "1px",
                 }}>
-                SAMURAI COMMANDER
+                KHOTUN KHAN
               </div>
               <HealthBar
                 hp={gameState.enemyHP}
                 maxHp={100}
                 color="enemy"
-                width={320}
+                width={270}
                 height={22}
+                style={{ marginRight: "-12px" }}
               />
             </div>
           </div>
@@ -654,7 +654,7 @@ export default function CombatScreen({ gameState, sounds }) {
       {dmgPopup && (
         <div
           key={dmgPopup.id}
-          className="damage-popup"
+          className="damage-popup pixel-text"
           style={{
             position: "absolute",
             left:
@@ -665,7 +665,6 @@ export default function CombatScreen({ gameState, sounds }) {
             color: dmgPopup.side === "enemy" ? "#ff4444" : "#ffaa00",
             fontSize: "40px",
             fontWeight: "900",
-            fontFamily: "'Press Start 2P', monospace",
             textShadow: "0 0 10px currentColor, 2px 2px 0 #000",
             pointerEvents: "none",
             zIndex: 200,

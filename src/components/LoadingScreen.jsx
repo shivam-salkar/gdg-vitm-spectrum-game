@@ -46,19 +46,45 @@ export default function LoadingScreen({ gameState, sounds }) {
         position: "relative",
         overflow: "hidden",
       }}>
+      <div
+        style={{
+          position: "absolute",
+          top: "0",
+          left: "0",
+          width: "170px",
+          height: "58px",
+          overflow: "hidden",
+          zIndex: 20,
+          pointerEvents: "none",
+        }}>
+        <img
+          src="/assets/gdg-logo.png"
+          alt="GDG logo"
+          style={{
+            position: "absolute",
+            top: "-6px",
+            left: "-10px",
+            width: "185px",
+            height: "66px",
+            objectFit: "contain",
+          }}
+        />
+      </div>
+
       <div className="title-text" style={{ marginBottom: "80px" }}>
         SPECTRUM
       </div>
 
       <div
+        className="pixel-text pixel-text--soft"
         style={{
           marginBottom: "40px",
           textAlign: "center",
-          fontSize: "16px",
-          fontFamily: "monospace",
+          fontSize: "12px",
           color: "#ffffff",
+          lineHeight: "1.8",
         }}>
-        by GOOGLE DEVELOPER GROUPS VITM
+        by GOOGLE DEVELOPER GROUP VITM
       </div>
 
       <div
@@ -81,10 +107,10 @@ export default function LoadingScreen({ gameState, sounds }) {
       </div>
 
       <div
+        className="pixel-text pixel-text--soft"
         style={{
           marginTop: "20px",
-          fontSize: "14px",
-          fontFamily: "monospace",
+          fontSize: "10px",
           color: "#aaa",
         }}>
         {Math.round(progress)}%

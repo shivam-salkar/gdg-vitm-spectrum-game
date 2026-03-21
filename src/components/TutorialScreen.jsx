@@ -76,6 +76,7 @@ export default function TutorialScreen({ gameState }) {
       />
 
       <div
+        className="pixel-text pixel-text--soft"
         style={{
           position: "absolute",
           top: "150px",
@@ -83,23 +84,23 @@ export default function TutorialScreen({ gameState }) {
           transform: "translateX(-50%)",
           opacity: text1Alpha,
           transition: "opacity 0.2s",
-          fontSize: "24px",
-          fontFamily: "monospace",
+          fontSize: "16px",
           color: "#ffffff",
           textAlign: "center",
+          width: "80%",
         }}>
         An enemy approaches...
       </div>
 
       <div
+        className="pixel-text"
         style={{
           position: "absolute",
           top: "200px",
           left: "50%",
           transform: `translateX(-50%) scale(${text2Scale})`,
           opacity: text2Alpha,
-          fontSize: "32px",
-          fontFamily: "monospace",
+          fontSize: "26px",
           color: "#ff4500",
           fontWeight: "bold",
           textAlign: "center",
