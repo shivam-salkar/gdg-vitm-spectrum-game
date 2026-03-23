@@ -5,6 +5,7 @@ import EnemySprite from "./EnemySprite.jsx";
 import HealthBar from "./HealthBar.jsx";
 import AttackPopup from "./AttackPopup.jsx";
 import { CONFIG, SPRITE_POSITIONS } from "../constants/gameConfig.js";
+import { useMultiplayerGame } from "../hooks/useMultiplayerGame.js";
 import "../game.css";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -34,7 +35,18 @@ function smoothMove(getX, setX, targetX, durationMs, onDone) {
 }
 
 // ─── component ──────────────────────────────────────────────────────────────
-export default function CombatScreen({ gameState, sounds }) {
+export default function CombatScreen({ gameState, sounds, multiplayerConfig = null }) {
+  // Multiplayer support
+  const multiplayerEnabled = !!multiplayerConfig;
+  const { gameState: mpGameState, sendAttack, triggerEnemyCounterAttack } = useMultiplayerGame(
+    multiplayerConfig?.sessionId,
+    multiplayerConfig?.playerId,
+    multiplayerEnabled
+  );
+
+  // Use multiplayer state if available, otherwise use local state
+  const activeGameState = multiplayerEnabled && mpGameState ? mpGameState : gameState;
+
   // Sprite positions stored as refs for smooth rAF movement (no re-render per frame)
   const playerXRef = useRef(SPRITE_POSITIONS.PLAYER_HOME_X);
   const enemyXRef = useRef(SPRITE_POSITIONS.ENEMY_HOME_X);
@@ -108,9 +120,46 @@ export default function CombatScreen({ gameState, sounds }) {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── multiplayer state sync ───────────────────────────────────────────────
+  useEffect(() => {
+    if (multiplayerEnabled && mpGameState) {
+      // Sync enemy HP from multiplayer
+      const currentEnemyHP = gameState.enemyHP;
+      if (mpGameState.enemyHP !== currentEnemyHP) {
+        // Server says enemy HP changed
+        const damageAmount = currentEnemyHP - mpGameState.enemyHP;
+        if (damageAmount > 0) {
+          // Enemy took damage
+          gameState.doDamage(damageAmount);
+          showDmg(damageAmount, "enemy");
+          sounds.enemyHit();
+        }
+      }
+
+      // Sync phase. Some older server states may still send "combat".
+      const syncedPhase = mpGameState.phase === "combat" ? "readyToAttack" : mpGameState.phase;
+      if (syncedPhase !== gameState.phase) {
+        gameState.setPhase(syncedPhase);
+      }
+
+      // Sync player HP
+      Object.entries(mpGameState.playerHP).forEach(([playerId, hp]) => {
+        if (playerId === multiplayerConfig.playerId) {
+          if (hp !== gameState.playerHP) {
+            const damage = gameState.playerHP - hp;
+            if (damage > 0) {
+              gameState.doPlayerDamage(damage);
+              showDmg(damage, "player");
+            }
+          }
+        }
+      });
+    }
+  }, [multiplayerEnabled, mpGameState]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── enemy-death watcher ──────────────────────────────────────────────────
   useEffect(() => {
-    if (gameState.phase === "death") {
+    if (activeGameState.phase === "death") {
       lockPlayerPosRef.current = false;
       setFreezePlayer(false);
       setPlayerPhase("idle");
@@ -122,11 +171,11 @@ export default function CombatScreen({ gameState, sounds }) {
         gameState.setScreen("reward");
       });
     }
-  }, [gameState.phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeGameState.phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── player-dead watcher ─────────────────────────────────────────────────
   useEffect(() => {
-    if (gameState.phase === "playerDead") {
+    if (activeGameState.phase === "playerDead") {
       clearAll();
       busyRef.current = false;
       lockPlayerPosRef.current = false;
@@ -140,7 +189,7 @@ export default function CombatScreen({ gameState, sounds }) {
         gameState.setScreen("intro");
       });
     }
-  }, [clearAll, gameState.phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [clearAll, activeGameState.phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── helpers to keep refs+state in sync during movement ──────────────────
   const setPlayerX = useCallback((v) => {
@@ -253,12 +302,19 @@ export default function CombatScreen({ gameState, sounds }) {
         after(280, () => setShakeClass(""));
 
         const eDmg = CONFIG.ENEMY_DAMAGE_PER_HIT;
-        gameState.doPlayerDamage(eDmg);
-        showDmg(eDmg, "player");
+        if (!multiplayerEnabled) {
+          // Single-player: apply damage locally
+          gameState.doPlayerDamage(eDmg);
+          showDmg(eDmg, "player");
+        } else {
+          // Multiplayer: ask server to apply and broadcast the same enemy damage to all players
+          triggerEnemyCounterAttack();
+        }
+        // In multiplayer, server will broadcast enemy damage to all players
         if (navigator.vibrate) navigator.vibrate(120);
 
         after(50, () => {
-          if (gameState.playerHP <= eDmg) {
+          if (activeGameState.playerHP <= eDmg) {
             gameState.setPhase("playerDead");
             return;
           }
@@ -296,7 +352,7 @@ export default function CombatScreen({ gameState, sounds }) {
         });
       });
     });
-  }, [after, gameState, setEnemyX, setPlayerX, showDmg, sounds]);
+  }, [after, gameState, multiplayerEnabled, setEnemyX, setPlayerX, showDmg, sounds, triggerEnemyCounterAttack]);
 
   useEffect(() => {
     if (idleAttackTimerRef.current) {
@@ -382,14 +438,20 @@ export default function CombatScreen({ gameState, sounds }) {
 
         // Deal damage
         const dmg = CONFIG.PLAYER_DAMAGE_PER_HIT;
-        gameState.doDamage(dmg);
-        showDmg(dmg, "enemy");
+        if (multiplayerEnabled) {
+          // Send attack to server
+          sendAttack();
+        } else {
+          // Single-player: apply damage locally
+          gameState.doDamage(dmg);
+          showDmg(dmg, "enemy");
+        }
         if (navigator.vibrate) navigator.vibrate(180);
         sounds.enemyHit();
 
         // Check if kill shot after a short frame
         after(50, () => {
-          if (gameState.enemyHP <= dmg) {
+          if (activeGameState.enemyHP <= dmg) {
             // Enemy dies – let the death watcher handle the screen
             sounds.enemyDeath();
             gameState.setPhase("death");
@@ -441,11 +503,11 @@ export default function CombatScreen({ gameState, sounds }) {
 
   // ── click handler ────────────────────────────────────────────────────────
   const handleClick = useCallback(() => {
-    if (gameState.phase === "readyToAttack") runTurn();
-  }, [gameState.phase, runTurn]);
+    if (activeGameState.phase === "readyToAttack") runTurn();
+  }, [activeGameState.phase, runTurn]);
 
-  const isDead = gameState.phase === "death";
-  const isPlayerDead = gameState.phase === "playerDead";
+  const isDead = activeGameState.phase === "death";
+  const isPlayerDead = activeGameState.phase === "playerDead";
 
   return (
     <div
@@ -456,7 +518,7 @@ export default function CombatScreen({ gameState, sounds }) {
         height: "100%",
         backgroundColor: "#0d1117",
         overflow: "hidden",
-        cursor: gameState.phase === "readyToAttack" ? "pointer" : "default",
+        cursor: activeGameState.phase === "readyToAttack" ? "pointer" : "default",
       }}
       onClick={handleClick}>
       <Background />
@@ -510,7 +572,7 @@ export default function CombatScreen({ gameState, sounds }) {
                 THE GHOST (YOU)
               </div>
               <HealthBar
-                hp={gameState.playerHP}
+                hp={activeGameState.playerHP}
                 maxHp={CONFIG.PLAYER_MAX_HP}
                 color="green"
                 width={270}
@@ -567,7 +629,7 @@ export default function CombatScreen({ gameState, sounds }) {
                 KHOTUN KHAN
               </div>
               <HealthBar
-                hp={gameState.enemyHP}
+                hp={activeGameState.enemyHP}
                 maxHp={CONFIG.ENEMY_MAX_HP}
                 color="enemy"
                 width={270}

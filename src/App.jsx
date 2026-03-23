@@ -39,6 +39,37 @@ export default function App() {
   const [assetsLoaded, setAssetsLoaded] = useState(false);
   const [scale, setScale] = useState(1);
   const fullscreenRequestedRef = useRef(false);
+  const [multiplayerConfig, setMultiplayerConfig] = useState(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionFromUrl = params.get("session");
+    const sessionId =
+      sessionFromUrl && sessionFromUrl.trim()
+        ? sessionFromUrl.trim()
+        : "game-room-1";
+
+    const playerFromUrl = params.get("player");
+    if (playerFromUrl && playerFromUrl.trim()) {
+      setMultiplayerConfig({
+        sessionId,
+        playerId: playerFromUrl.trim(),
+      });
+      return;
+    }
+
+    const storageKey = "spectrum-player-id";
+    let playerId = window.sessionStorage.getItem(storageKey);
+    if (!playerId) {
+      playerId = `player-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+      window.sessionStorage.setItem(storageKey, playerId);
+    }
+
+    setMultiplayerConfig({
+      sessionId,
+      playerId,
+    });
+  }, []);
 
   const requestFullscreen = useCallback(() => {
     const elem = document.documentElement;
@@ -243,7 +274,11 @@ export default function App() {
           )}
           {screen === "tutorial" && <TutorialScreen gameState={gameState} />}
           {screen === "combat" && (
-            <CombatScreen gameState={gameState} sounds={sounds} />
+            <CombatScreen
+              gameState={gameState}
+              sounds={sounds}
+              multiplayerConfig={multiplayerConfig}
+            />
           )}
           {screen === "reward" && <RewardScreen gameState={gameState} />}
         </div>
