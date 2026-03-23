@@ -9,8 +9,10 @@ export function useMultiplayerGame(sessionId, playerId, enabled = false) {
   useEffect(() => {
     if (!enabled || !sessionId || !playerId) return;
 
+    const SERVER_URL = import.meta.env.VITE_GAME_SERVER_URL || "http://localhost:3000";
+
     // Connect to server
-    const newSocket = io('http://localhost:3000', {
+    const newSocket = io(SERVER_URL , {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
