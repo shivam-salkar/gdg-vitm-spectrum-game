@@ -33,7 +33,8 @@ export default function AttackPopup({ visible, enabled = true, onClick }) {
         touchAction: "manipulation",
       }}
       onMouseDown={handlePress}
-      onTouchStart={handlePress}>
+      onTouchStart={handlePress}
+    >
       <div
         style={{
           width: "100px",
@@ -51,9 +52,10 @@ export default function AttackPopup({ visible, enabled = true, onClick }) {
               ? "none"
               : "grayscale(1) brightness(0.8)",
           transition: "transform 0.1s ease-out, filter 0.1s ease-out",
-        }}>
+        }}
+      >
         <img
-          src="/assets/sword_button.png"
+          src="/assets/sword_button.webp"
           alt="Attack"
           style={{
             width: "100%",

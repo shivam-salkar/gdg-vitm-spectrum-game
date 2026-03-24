@@ -10,7 +10,7 @@ export default function Background() {
       muted
       playsInline
       preload="metadata"
-      poster="/assets/background.png"
+      poster="/assets/background.webp"
       style={{
         position: "absolute",
         top: 0,
@@ -21,7 +21,8 @@ export default function Background() {
         transform: "translateZ(0) scale(1.15)",
         willChange: "transform",
         backfaceVisibility: "hidden",
-      }}>
+      }}
+    >
       <source src="/background.mp4" type="video/mp4" />
       Your browser does not support the video tag.
     </video>

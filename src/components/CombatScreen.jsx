@@ -439,7 +439,8 @@ export default function CombatScreen({ gameState, sounds }) {
         touchAction: "manipulation",
         userSelect: "none",
       }}
-      onClick={handleClick}>
+      onClick={handleClick}
+    >
       <Background />
 
       {/* Shake animation is applied to container via className */}
@@ -456,12 +457,13 @@ export default function CombatScreen({ gameState, sounds }) {
               display: "flex",
               alignItems: "center",
               zIndex: 100,
-            }}>
+            }}
+          >
             <div
               style={{
                 width: "128px",
                 height: "128px",
-                backgroundImage: "url('/assets/hero-icon.png')",
+                backgroundImage: "url('/assets/hero-icon.webp')",
                 backgroundSize: "contain",
                 backgroundRepeat: "no-repeat",
                 backgroundPosition: "center",
@@ -478,7 +480,8 @@ export default function CombatScreen({ gameState, sounds }) {
                 flexDirection: "column",
                 gap: "2px",
                 zIndex: 1,
-              }}>
+              }}
+            >
               <div
                 className="pixel-text pixel-text--soft"
                 style={{
@@ -487,7 +490,8 @@ export default function CombatScreen({ gameState, sounds }) {
                   fontWeight: "bold",
                   marginLeft: "30px",
                   letterSpacing: "1px",
-                }}>
+                }}
+              >
                 THE GHOST (YOU)
               </div>
               <HealthBar
@@ -511,12 +515,13 @@ export default function CombatScreen({ gameState, sounds }) {
               flexDirection: "row-reverse",
               alignItems: "center",
               zIndex: 100,
-            }}>
+            }}
+          >
             <div
               style={{
                 width: "128px",
                 height: "128px",
-                backgroundImage: "url('/assets/enemy-icon.png')",
+                backgroundImage: "url('/assets/enemy-icon.webp')",
                 backgroundSize: "contain",
                 backgroundRepeat: "no-repeat",
                 backgroundPosition: "center",
@@ -535,7 +540,8 @@ export default function CombatScreen({ gameState, sounds }) {
                 gap: "2px",
                 alignItems: "flex-end",
                 zIndex: 1,
-              }}>
+              }}
+            >
               <div
                 className="pixel-text pixel-text--soft"
                 style={{
@@ -544,7 +550,8 @@ export default function CombatScreen({ gameState, sounds }) {
                   fontWeight: "bold",
                   marginRight: "40px",
                   letterSpacing: "1px",
-                }}>
+                }}
+              >
                 KHOTUN KHAN
               </div>
               <HealthBar
@@ -579,7 +586,8 @@ export default function CombatScreen({ gameState, sounds }) {
           filter: isDead ? "grayscale(1)" : "none",
           transition: "filter 0.6s ease-out",
           willChange: "filter",
-        }}>
+        }}
+      >
         <EnemySprite
           x={enemyPos}
           y={SPRITE_POSITIONS.SPRITE_Y}
@@ -650,7 +658,8 @@ export default function CombatScreen({ gameState, sounds }) {
             pointerEvents: "none",
             zIndex: 200,
             animation: "dmgFloat 0.9s ease-out forwards",
-          }}>
+          }}
+        >
           -{dmgPopup.value}
         </div>
       )}

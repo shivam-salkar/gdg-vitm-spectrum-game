@@ -57,7 +57,8 @@ export default function RewardScreen({ gameState }) {
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-      }}>
+      }}
+    >
       <Background />
 
       <div
@@ -70,9 +71,10 @@ export default function RewardScreen({ gameState }) {
           overflow: "hidden",
           zIndex: 20,
           pointerEvents: "none",
-        }}>
+        }}
+      >
         <img
-          src="/assets/gdg-logo.png"
+          src="/assets/gdg-logo.webp"
           alt="GDG logo"
           style={{
             position: "absolute",
@@ -112,7 +114,8 @@ export default function RewardScreen({ gameState }) {
           opacity: text1Alpha,
           transition: "opacity 0.2s",
           fontSize: "40px",
-        }}>
+        }}
+      >
         VICTORY
       </div>
 
@@ -129,7 +132,8 @@ export default function RewardScreen({ gameState }) {
           color: "#ffffff",
           textAlign: "center",
           width: "78%",
-        }}>
+        }}
+      >
         You have defended the realm.
       </div>
 
@@ -144,7 +148,8 @@ export default function RewardScreen({ gameState }) {
           transition: "opacity 0.2s",
           fontSize: "9px",
           color: "#aaaaaa",
-        }}>
+        }}
+      >
         SPECTRUM 2026 - GDG VITM
       </div>
 
@@ -160,13 +165,15 @@ export default function RewardScreen({ gameState }) {
           flexDirection: "column",
           alignItems: "center",
           gap: "10px",
-        }}>
+        }}
+      >
         <div
           className="pixel-text pixel-text--soft"
           style={{
             fontSize: "10px",
             color: "#ffd56b",
-          }}>
+          }}
+        >
           Katana Awaits its worthy Samurai!
         </div>
 
@@ -178,9 +185,10 @@ export default function RewardScreen({ gameState }) {
             alignItems: "center",
             justifyContent: "center",
             padding: "0",
-          }}>
+          }}
+        >
           <img
-            src="/assets/sword.png"
+            src="/assets/sword.webp"
             alt="Katana reward"
             style={{
               width: "100%",
@@ -205,7 +213,8 @@ export default function RewardScreen({ gameState }) {
           transition: "opacity 0.2s",
           cursor: buttonsEnabled ? "pointer" : "default",
           pointerEvents: buttonsEnabled ? "auto" : "none",
-        }}>
+        }}
+      >
         PLAY AGAIN
       </button>
     </div>

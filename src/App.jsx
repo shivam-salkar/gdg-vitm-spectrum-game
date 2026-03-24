@@ -2,10 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useGameState } from "./hooks/useGameState.js";
 import { usePixiSound } from "./hooks/usePixiSound.js";
 import { CONFIG } from "./constants/gameConfig.js";
-import {
-  CRITICAL_ASSET_URLS,
-  WARM_ASSET_URLS,
-} from "./constants/sprites.js";
+import { CRITICAL_ASSET_URLS, WARM_ASSET_URLS } from "./constants/sprites.js";
 
 import LoadingScreen from "./components/LoadingScreen.jsx";
 import IntroScreen from "./components/IntroScreen.jsx";
@@ -129,9 +126,7 @@ export default function App() {
           if (cancelled) return;
 
           completedAssets += 1;
-          setLoadingProgress(
-            Math.round((completedAssets / totalAssets) * 100),
-          );
+          setLoadingProgress(Math.round((completedAssets / totalAssets) * 100));
         }),
       );
 
@@ -253,9 +248,10 @@ export default function App() {
           fontFamily: '"Press Start 2P", monospace',
           textTransform: "uppercase",
           textShadow: "2px 2px 0 #000",
-        }}>
+        }}
+      >
         <img
-          src="/assets/phone-rotate.png"
+          src="/assets/phone-rotate.webp"
           alt="Rotate phone"
           style={{
             width: "120px",
@@ -271,7 +267,8 @@ export default function App() {
             textAlign: "center",
             fontSize: "18px",
             lineHeight: "1.6",
-          }}>
+          }}
+        >
           LANDSCAPE REQUIRED
         </h2>
         <p
@@ -282,7 +279,8 @@ export default function App() {
             opacity: 0.7,
             fontSize: "11px",
             maxWidth: "420px",
-          }}>
+          }}
+        >
           Please rotate your device to play SPECTRUM.
         </p>
       </div>
@@ -299,7 +297,8 @@ export default function App() {
           position: "relative",
           overflow: "hidden",
           touchAction: "manipulation",
-        }}>
+        }}
+      >
         <div
           style={{
             position: "relative",
@@ -312,7 +311,8 @@ export default function App() {
             isolation: "isolate",
             willChange: "transform",
             backfaceVisibility: "hidden",
-          }}>
+          }}
+        >
           <div
             style={{
               position: "absolute",
@@ -324,7 +324,8 @@ export default function App() {
               transformOrigin: "top left",
               willChange: "transform",
               backfaceVisibility: "hidden",
-            }}>
+            }}
+          >
             {screen === "loading" && (
               <LoadingScreen
                 gameState={gameState}
@@ -366,7 +367,7 @@ export default function App() {
           alignItems: "center",
           justifyContent: "center",
           zIndex: 99999,
-          backgroundImage: "url('/assets/fullscreen_button.png')",
+          backgroundImage: "url('/assets/fullscreen_button.webp')",
           backgroundSize: "contain",
           backgroundRepeat: "no-repeat",
           backgroundPosition: "center",
@@ -381,7 +382,8 @@ export default function App() {
         onMouseOut={(e) => {
           e.currentTarget.style.opacity = "0.8";
         }}
-        title="Fullscreen"></button>
+        title="Fullscreen"
+      ></button>
     </>
   );
 }

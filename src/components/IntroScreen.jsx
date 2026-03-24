@@ -15,7 +15,7 @@ export default function IntroScreen({ gameState, sounds }) {
   const introAudioRef = useRef(null);
 
   const LYRICS =
-  "You burned my people. You broke our code. Now you face what remains… the Ghost.";
+    "You burned my people. You broke our code. Now you face what remains… the Ghost.";
   const SUBTITLE_START = 10; // frames to wait before starting subtitles
   const CHAR_SPEED = 7; // frames per character (lower = faster typing)
   const SUBTITLE_DURATION = LYRICS.length * CHAR_SPEED + 180; // Typewriter time + longer hold
@@ -30,7 +30,11 @@ export default function IntroScreen({ gameState, sounds }) {
   }, []);
 
   const tryPlayIntroAudio = useCallback(() => {
-    if (cleanupRef.current || audioPlayedRef.current || !introAudioRef.current) {
+    if (
+      cleanupRef.current ||
+      audioPlayedRef.current ||
+      !introAudioRef.current
+    ) {
       return;
     }
 
@@ -138,7 +142,8 @@ export default function IntroScreen({ gameState, sounds }) {
         height: "100%",
         backgroundColor: "#0d1117",
         overflow: "hidden",
-      }}>
+      }}
+    >
       <Background />
 
       <div
@@ -151,9 +156,10 @@ export default function IntroScreen({ gameState, sounds }) {
           overflow: "hidden",
           zIndex: 20,
           pointerEvents: "none",
-        }}>
+        }}
+      >
         <img
-          src="/assets/gdg-logo.png"
+          src="/assets/gdg-logo.webp"
           alt="GDG logo"
           style={{
             position: "absolute",
@@ -187,7 +193,8 @@ export default function IntroScreen({ gameState, sounds }) {
           opacity: titleAlpha,
           transition: "opacity 0.3s ease-out",
           fontSize: "42px",
-        }}>
+        }}
+      >
         SPECTRUM
       </div>
 
@@ -207,7 +214,8 @@ export default function IntroScreen({ gameState, sounds }) {
             backgroundColor: "rgba(0,0,0,0.5)",
             padding: "10px",
             borderRadius: "4px",
-          }}>
+          }}
+        >
           {LYRICS.substring(0, subtitleChar)}
         </div>
       )}
@@ -227,7 +235,8 @@ export default function IntroScreen({ gameState, sounds }) {
             fontSize: "9px",
             textAlign: "center",
             zIndex: 100,
-          }}>
+          }}
+        >
           TAP OR PRESS ANY KEY FOR VOICE
         </div>
       )}
@@ -261,7 +270,8 @@ export default function IntroScreen({ gameState, sounds }) {
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
             e.currentTarget.style.color = "#fff";
-          }}>
+          }}
+        >
           SKIP INTRO ➔
         </div>
       )}

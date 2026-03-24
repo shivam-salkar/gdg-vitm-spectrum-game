@@ -38,7 +38,8 @@ export default function LoadingScreen({
         alignItems: "center",
         position: "relative",
         overflow: "hidden",
-      }}>
+      }}
+    >
       <div
         style={{
           position: "absolute",
@@ -49,9 +50,10 @@ export default function LoadingScreen({
           overflow: "hidden",
           zIndex: 20,
           pointerEvents: "none",
-        }}>
+        }}
+      >
         <img
-          src="/assets/gdg-logo.png"
+          src="/assets/gdg-logo.webp"
           alt="GDG logo"
           style={{
             position: "absolute",
@@ -76,7 +78,8 @@ export default function LoadingScreen({
           fontSize: "12px",
           color: "#ffffff",
           lineHeight: "1.8",
-        }}>
+        }}
+      >
         by GOOGLE DEVELOPER GROUP VITM
       </div>
 
@@ -88,7 +91,8 @@ export default function LoadingScreen({
           borderRadius: "4px",
           overflow: "hidden",
           background: "#111",
-        }}>
+        }}
+      >
         <div
           style={{
             height: "100%",
@@ -105,7 +109,8 @@ export default function LoadingScreen({
           marginTop: "20px",
           fontSize: "10px",
           color: "#aaa",
-        }}>
+        }}
+      >
         {Math.round(progress)}%
       </div>
     </div>
