@@ -13,6 +13,7 @@ export default function IntroScreen({ gameState, sounds }) {
   const cleanupRef = useRef(false);
   const audioPlayedRef = useRef(false);
   const introAudioRef = useRef(null);
+  const audioStartingRef = useRef(false);
 
   const LYRICS =
     "You burned my people. You broke our code. Now you face what remains… the Ghost.";
@@ -25,35 +26,49 @@ export default function IntroScreen({ gameState, sounds }) {
     if (introAudioRef.current) {
       introAudioRef.current.pause();
       introAudioRef.current.currentTime = 0;
-      introAudioRef.current = null;
     }
+    audioStartingRef.current = false;
   }, []);
 
-  const tryPlayIntroAudio = useCallback(() => {
+  const tryPlayIntroAudio = useCallback(async () => {
     if (
       cleanupRef.current ||
       audioPlayedRef.current ||
-      !introAudioRef.current
+      !introAudioRef.current ||
+      audioStartingRef.current
     ) {
       return;
     }
 
-    const playPromise = introAudioRef.current.play();
-    if (playPromise?.then) {
-      playPromise
-        .then(() => {
-          audioPlayedRef.current = true;
-          setAwaitingInteraction(false);
-        })
-        .catch((err) => {
-          console.log("Intro audio play failed:", err);
-          setAwaitingInteraction(true);
-        });
-      return;
-    }
+    const audio = introAudioRef.current;
+    audioStartingRef.current = true;
 
-    audioPlayedRef.current = true;
-    setAwaitingInteraction(false);
+    try {
+      if (audio.readyState < 2) {
+        await new Promise((resolve) => {
+          const handleReady = () => {
+            audio.removeEventListener("canplay", handleReady);
+            audio.removeEventListener("canplaythrough", handleReady);
+            resolve();
+          };
+
+          audio.addEventListener("canplay", handleReady, { once: true });
+          audio.addEventListener("canplaythrough", handleReady, { once: true });
+          audio.load();
+        });
+      }
+
+      if (cleanupRef.current || !introAudioRef.current) return;
+
+      await audio.play();
+      audioPlayedRef.current = true;
+      setAwaitingInteraction(false);
+    } catch (err) {
+      console.log("Intro audio play failed:", err);
+      setAwaitingInteraction(true);
+    } finally {
+      audioStartingRef.current = false;
+    }
   }, []);
 
   useEffect(() => {
@@ -70,13 +85,21 @@ export default function IntroScreen({ gameState, sounds }) {
   useEffect(() => {
     const audio = new Audio("/assets/player_speech.mp3");
     audio.preload = "auto";
+    audio.playsInline = true;
     audio.volume = 1;
+    audio.loop = false;
+    audio.addEventListener("ended", () => {
+      audioPlayedRef.current = true;
+      setAwaitingInteraction(false);
+    });
     introAudioRef.current = audio;
-    tryPlayIntroAudio();
+    audio.load();
+    void tryPlayIntroAudio();
 
     return () => {
       if (introAudioRef.current === audio) {
         stopIntroAudio();
+        introAudioRef.current = null;
       }
     };
   }, [stopIntroAudio, tryPlayIntroAudio]);
@@ -85,15 +108,23 @@ export default function IntroScreen({ gameState, sounds }) {
     if (!awaitingInteraction) return;
 
     const handleInteraction = () => {
-      tryPlayIntroAudio();
+      void tryPlayIntroAudio();
     };
 
-    window.addEventListener("pointerdown", handleInteraction);
-    window.addEventListener("keydown", handleInteraction);
+    window.addEventListener("pointerdown", handleInteraction, {
+      capture: true,
+    });
+    window.addEventListener("keydown", handleInteraction, {
+      capture: true,
+    });
 
     return () => {
-      window.removeEventListener("pointerdown", handleInteraction);
-      window.removeEventListener("keydown", handleInteraction);
+      window.removeEventListener("pointerdown", handleInteraction, {
+        capture: true,
+      });
+      window.removeEventListener("keydown", handleInteraction, {
+        capture: true,
+      });
     };
   }, [awaitingInteraction, tryPlayIntroAudio]);
 
