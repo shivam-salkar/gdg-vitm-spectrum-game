@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useGameState } from "./hooks/useGameState.js";
 import { usePixiSound } from "./hooks/usePixiSound.js";
 import { CONFIG } from "./constants/gameConfig.js";
+import { CRITICAL_ASSET_URLS, WARM_ASSET_URLS } from "./constants/sprites.js";
 
 import LoadingScreen from "./components/LoadingScreen.jsx";
 import IntroScreen from "./components/IntroScreen.jsx";
@@ -11,34 +12,114 @@ import RewardScreen from "./components/RewardScreen.jsx";
 
 import "./App.css";
 
-// Preload assets
-const ASSETS_TO_LOAD = [
-  "/background.mp4",
-  "/assets/Samurai/Idle.png",
-  "/assets/Samurai/Walk.png",
-  "/assets/Samurai/Run.png",
-  "/assets/Samurai/Attack_1.png",
-  "/assets/Samurai/Attack_2.png",
-  "/assets/Samurai/Attack_3.png",
-  "/assets/Samurai/Protection.png",
-  "/assets/Samurai/Dead.png",
-  "/assets/Samurai_Commander/Idle.png",
-  "/assets/Samurai_Commander/Walk.png",
-  "/assets/Samurai_Commander/Run.png",
-  "/assets/Samurai_Commander/Attack_1.png",
-  "/assets/Samurai_Commander/Attack_2.png",
-  "/assets/Samurai_Commander/Attack_3.png",
-  "/assets/Samurai_Commander/Protect.png",
-  "/assets/Samurai_Commander/Hurt.png",
-  "/assets/Samurai_Commander/Dead.png",
-];
+const IMAGE_FILE_RE = /\.(png|jpe?g|gif|webp|svg)$/i;
+const preloadCache = new Map();
+
+function getViewportSize() {
+  if (typeof window === "undefined") {
+    return {
+      width: CONFIG.STAGE_WIDTH,
+      height: CONFIG.STAGE_HEIGHT,
+    };
+  }
+
+  const viewport = window.visualViewport;
+  return {
+    width: Math.max(1, Math.round(viewport?.width ?? window.innerWidth)),
+    height: Math.max(1, Math.round(viewport?.height ?? window.innerHeight)),
+  };
+}
+
+function getStageScale(width, height) {
+  const gameAspect = CONFIG.STAGE_WIDTH / CONFIG.STAGE_HEIGHT;
+  const screenAspect = width / height;
+
+  if (screenAspect > gameAspect) {
+    return height / CONFIG.STAGE_HEIGHT;
+  }
+
+  return width / CONFIG.STAGE_WIDTH;
+}
+
+function setViewportCssVars({ width, height }) {
+  document.documentElement.style.setProperty("--app-height", `${height}px`);
+  document.documentElement.style.setProperty("--app-width", `${width}px`);
+}
+
+function preloadAsset(url) {
+  if (preloadCache.has(url)) {
+    return preloadCache.get(url);
+  }
+
+  const assetPromise = IMAGE_FILE_RE.test(url)
+    ? new Promise((resolve) => {
+        let settled = false;
+        const img = new Image();
+
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          resolve(url);
+        };
+
+        img.decoding = "async";
+        img.onload = finish;
+        img.onerror = finish;
+        img.src = url;
+
+        if (img.complete) {
+          finish();
+        }
+      })
+    : fetch(url, { cache: "force-cache" })
+        .catch(() => null)
+        .then(() => url);
+
+  preloadCache.set(url, assetPromise);
+  return assetPromise;
+}
 
 export default function App() {
   const gameState = useGameState();
   const sounds = usePixiSound();
-  const [assetsLoaded, setAssetsLoaded] = useState(false);
-  const [scale, setScale] = useState(1);
+  const [assetsReady, setAssetsReady] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [scale, setScale] = useState(() => {
+    const viewport = getViewportSize();
+    return getStageScale(viewport.width, viewport.height);
+  });
   const fullscreenRequestedRef = useRef(false);
+  const [multiplayerConfig, setMultiplayerConfig] = useState(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionFromUrl = params.get("session");
+    const sessionId =
+      sessionFromUrl && sessionFromUrl.trim()
+        ? sessionFromUrl.trim()
+        : "game-room-1";
+
+    const playerFromUrl = params.get("player");
+    if (playerFromUrl && playerFromUrl.trim()) {
+      setMultiplayerConfig({
+        sessionId,
+        playerId: playerFromUrl.trim(),
+      });
+      return;
+    }
+
+    const storageKey = "spectrum-player-id";
+    let playerId = window.sessionStorage.getItem(storageKey);
+    if (!playerId) {
+      playerId = `player-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+      window.sessionStorage.setItem(storageKey, playerId);
+    }
+
+    setMultiplayerConfig({
+      sessionId,
+      playerId,
+    });
+  }, []);
 
   const requestFullscreen = useCallback(() => {
     const elem = document.documentElement;
@@ -57,28 +138,72 @@ export default function App() {
     }
   }, []);
 
+  const syncViewport = useCallback(() => {
+    const viewport = getViewportSize();
+    setViewportCssVars(viewport);
+    setScale(getStageScale(viewport.width, viewport.height));
+  }, []);
+
   useEffect(() => {
-    async function loadAssets() {
-      try {
-        await Promise.all(
-          ASSETS_TO_LOAD.map(
-            (url) =>
-              new Promise((resolve, reject) => {
-                const img = new Image();
-                img.onload = resolve;
-                img.onerror = reject;
-                img.src = url;
-              }),
-          ),
-        );
-        setAssetsLoaded(true);
-      } catch (e) {
-        console.error("Asset loading error:", e);
-        setAssetsLoaded(true); // Attempt to proceed anyway
+    let cancelled = false;
+    const totalAssets = CRITICAL_ASSET_URLS.length;
+
+    async function loadCriticalAssets() {
+      let completedAssets = 0;
+
+      await Promise.allSettled(
+        CRITICAL_ASSET_URLS.map(async (url) => {
+          await preloadAsset(url);
+          if (cancelled) return;
+
+          completedAssets += 1;
+          setLoadingProgress(Math.round((completedAssets / totalAssets) * 100));
+        }),
+      );
+
+      if (!cancelled) {
+        setLoadingProgress(100);
+        setAssetsReady(true);
       }
     }
-    loadAssets();
+
+    loadCriticalAssets();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  useEffect(() => {
+    if (!assetsReady) return undefined;
+
+    let cancelled = false;
+    let timeoutId = null;
+    let idleId = null;
+
+    const warmAssets = () => {
+      if (cancelled) return;
+      WARM_ASSET_URLS.forEach((url) => {
+        void preloadAsset(url);
+      });
+    };
+
+    if (window.requestIdleCallback) {
+      idleId = window.requestIdleCallback(warmAssets, { timeout: 1200 });
+    } else {
+      timeoutId = window.setTimeout(warmAssets, 250);
+    }
+
+    return () => {
+      cancelled = true;
+      if (idleId !== null) {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [assetsReady]);
 
   useEffect(() => {
     const handleFirstInteraction = () => {
@@ -98,51 +223,27 @@ export default function App() {
   }, [requestFullscreen]);
 
   useEffect(() => {
-    const handleResize = () => {
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const gameAspect = CONFIG.STAGE_WIDTH / CONFIG.STAGE_HEIGHT;
-      const screenAspect = vw / vh;
+    setViewportCssVars(getViewportSize());
 
-      let newScale;
-      if (screenAspect > gameAspect) {
-        // Screen is wider
-        newScale = vh / CONFIG.STAGE_HEIGHT;
-      } else {
-        // Screen is taller
-        newScale = vw / CONFIG.STAGE_WIDTH;
-      }
-      setScale(newScale);
+    const viewport = window.visualViewport;
+    window.addEventListener("resize", syncViewport);
+    window.addEventListener("orientationchange", syncViewport);
+    viewport?.addEventListener("resize", syncViewport);
+    viewport?.addEventListener("scroll", syncViewport);
+    document.addEventListener("fullscreenchange", syncViewport);
+
+    return () => {
+      window.removeEventListener("resize", syncViewport);
+      window.removeEventListener("orientationchange", syncViewport);
+      viewport?.removeEventListener("resize", syncViewport);
+      viewport?.removeEventListener("scroll", syncViewport);
+      document.removeEventListener("fullscreenchange", syncViewport);
     };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [syncViewport]);
 
   const { screen } = gameState;
-
-  if (!assetsLoaded) {
-    return (
-      <div
-        style={{
-          width: "100vw",
-          height: "100vh",
-          background: "#000",
-          color: "#fff",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: '"Press Start 2P", monospace',
-          fontSize: "16px",
-          textAlign: "center",
-          textTransform: "uppercase",
-          textShadow: "2px 2px 0 #000",
-        }}>
-        Loading Game Assets...
-      </div>
-    );
-  }
+  const stageWidth = CONFIG.STAGE_WIDTH * scale;
+  const stageHeight = CONFIG.STAGE_HEIGHT * scale;
 
   return (
     <>
@@ -167,8 +268,8 @@ export default function App() {
           position: "fixed",
           top: 0,
           left: 0,
-          width: "100vw",
-          height: "100vh",
+          width: "var(--app-width, 100vw)",
+          height: "var(--app-height, 100dvh)",
           backgroundColor: "#0d1117",
           zIndex: 99999,
           flexDirection: "column",
@@ -178,9 +279,10 @@ export default function App() {
           fontFamily: '"Press Start 2P", monospace',
           textTransform: "uppercase",
           textShadow: "2px 2px 0 #000",
-        }}>
+        }}
+      >
         <img
-          src="/assets/phone-rotate.png"
+          src="/assets/phone-rotate.webp"
           alt="Rotate phone"
           style={{
             width: "120px",
@@ -196,7 +298,8 @@ export default function App() {
             textAlign: "center",
             fontSize: "18px",
             lineHeight: "1.6",
-          }}>
+          }}
+        >
           LANDSCAPE REQUIRED
         </h2>
         <p
@@ -207,7 +310,8 @@ export default function App() {
             opacity: 0.7,
             fontSize: "11px",
             maxWidth: "420px",
-          }}>
+          }}
+        >
           Please rotate your device to play SPECTRUM.
         </p>
       </div>
@@ -215,37 +319,65 @@ export default function App() {
       <div
         id="game-content"
         style={{
-          width: "100vw",
-          height: "100vh",
+          width: "var(--app-width, 100vw)",
+          height: "var(--app-height, 100dvh)",
           backgroundColor: "#000",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
           position: "relative",
           overflow: "hidden",
-        }}>
+          touchAction: "manipulation",
+        }}
+      >
         <div
           style={{
             position: "relative",
-            width: CONFIG.STAGE_WIDTH,
-            height: CONFIG.STAGE_HEIGHT,
+            width: `${stageWidth}px`,
+            height: `${stageHeight}px`,
             overflow: "hidden",
             backgroundColor: "#0d1117",
             boxShadow: "0 0 20px rgba(255, 69, 0, 0.3)",
-            transform: `scale(${scale})`,
-            transformOrigin: "center center",
-          }}>
-          {screen === "loading" && (
-            <LoadingScreen gameState={gameState} sounds={sounds} />
-          )}
-          {screen === "intro" && (
-            <IntroScreen gameState={gameState} sounds={sounds} />
-          )}
-          {screen === "tutorial" && <TutorialScreen gameState={gameState} />}
-          {screen === "combat" && (
-            <CombatScreen gameState={gameState} sounds={sounds} />
-          )}
-          {screen === "reward" && <RewardScreen gameState={gameState} />}
+            contain: "layout paint",
+            isolation: "isolate",
+            willChange: "transform",
+            backfaceVisibility: "hidden",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: `${CONFIG.STAGE_WIDTH}px`,
+              height: `${CONFIG.STAGE_HEIGHT}px`,
+              transform: `translateZ(0) scale(${scale})`,
+              transformOrigin: "top left",
+              willChange: "transform",
+              backfaceVisibility: "hidden",
+            }}
+          >
+            {screen === "loading" && (
+              <LoadingScreen
+                gameState={gameState}
+                sounds={sounds}
+                loadingProgress={loadingProgress}
+                assetsReady={assetsReady}
+              />
+            )}
+            {screen === "intro" && (
+              <IntroScreen gameState={gameState} sounds={sounds} />
+            )}
+            {screen === "tutorial" && <TutorialScreen gameState={gameState} />}
+            {screen === "combat" && (
+              <CombatScreen
+                gameState={gameState}
+                sounds={sounds}
+                multiplayerConfig={multiplayerConfig}
+              />
+            )}
+            {screen === "reward" && <RewardScreen gameState={gameState} />}
+          </div>
         </div>
       </div>
 
@@ -270,7 +402,7 @@ export default function App() {
           alignItems: "center",
           justifyContent: "center",
           zIndex: 99999,
-          backgroundImage: "url('/assets/fullscreen_button.png')",
+          backgroundImage: "url('/assets/fullscreen_button.webp')",
           backgroundSize: "contain",
           backgroundRepeat: "no-repeat",
           backgroundPosition: "center",
@@ -285,7 +417,8 @@ export default function App() {
         onMouseOut={(e) => {
           e.currentTarget.style.opacity = "0.8";
         }}
-        title="Fullscreen"></button>
+        title="Fullscreen"
+      ></button>
     </>
   );
 }

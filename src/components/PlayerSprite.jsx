@@ -1,34 +1,16 @@
-import React, { useRef, useEffect, useState, memo } from "react";
+import React, { useRef, useEffect, memo } from "react";
 import "../game.css";
+import {
+  PLAYER_ANIMATIONS,
+  SPRITE_DIMENSIONS,
+} from "../constants/sprites.js";
 
-const FRAME_W = 128;
-const FRAME_H = 128;
-const SCALE = 3;
-
-const ANIMATIONS = {
-  idle: { url: "/assets/Samurai/Idle.png", frames: 6, fps: 8 },
-  walk: { url: "/assets/Samurai/Walk.png", frames: 9, fps: 10 },
-  run: { url: "/assets/Samurai/Run.png", frames: 8, fps: 14 },
-  attack1: { url: "/assets/Samurai/Attack_1.png", frames: 4, fps: 12 },
-  attack2: { url: "/assets/Samurai/Attack_2.png", frames: 5, fps: 12 },
-  attack3: { url: "/assets/Samurai/Attack_3.png", frames: 4, fps: 12 },
-  protect: { url: "/assets/Samurai/Protection.png", frames: 3, fps: 8 },
-  hit: { url: "/assets/Samurai/Hurt.png", frames: 3, fps: 8 },
-  death: { url: "/assets/Samurai/Dead.png", frames: 6, fps: 8 },
-};
-
-// Pre-load all frames once
-const preloaded = {};
-Object.values(ANIMATIONS).forEach(({ url }) => {
-  if (!preloaded[url]) {
-    const img = new Image();
-    img.src = url;
-    preloaded[url] = img;
-  }
-});
+const { FRAME_WIDTH, FRAME_HEIGHT, SCALE, HALF_WIDTH, HALF_HEIGHT } =
+  SPRITE_DIMENSIONS;
 
 function PlayerSprite({ x, y, phase = "idle", freeze = false }) {
-  const anim = ANIMATIONS[phase] || ANIMATIONS.idle;
+  const anim = PLAYER_ANIMATIONS[phase] || PLAYER_ANIMATIONS.idle;
+  const { url, frames, fps } = anim;
   const spriteRef = useRef(null);
   const stateRef = useRef({ frame: 0, elapsed: 0, last: null, phase });
 
@@ -43,11 +25,11 @@ function PlayerSprite({ x, y, phase = "idle", freeze = false }) {
   // Set up background image and size once when animation changes
   useEffect(() => {
     const el = spriteRef.current;
-    if (el && anim) {
-      el.style.backgroundImage = `url('${anim.url}')`;
-      el.style.backgroundSize = `${anim.frames * FRAME_W * SCALE}px ${FRAME_H * SCALE}px`;
+    if (el) {
+      el.style.backgroundImage = `url('${url}')`;
+      el.style.backgroundSize = `${frames * FRAME_WIDTH * SCALE}px ${FRAME_HEIGHT * SCALE}px`;
     }
-  }, [anim.url, anim.frames]);
+  }, [frames, url]);
 
   // Animate frame positions
   useEffect(() => {
@@ -62,7 +44,6 @@ function PlayerSprite({ x, y, phase = "idle", freeze = false }) {
       return;
     }
 
-    const { frames, fps } = anim;
     const frameDur = 1000 / fps; // ms per frame
     let id;
 
@@ -85,7 +66,7 @@ function PlayerSprite({ x, y, phase = "idle", freeze = false }) {
           // Update DOM only when frame changes
           const el = spriteRef.current;
           if (el) {
-            el.style.backgroundPositionX = `-${s.frame * FRAME_W * SCALE}px`;
+            el.style.backgroundPositionX = `-${s.frame * FRAME_WIDTH * SCALE}px`;
           }
         }
       }
@@ -95,10 +76,10 @@ function PlayerSprite({ x, y, phase = "idle", freeze = false }) {
 
     id = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(id);
-  }, [anim, phase, freeze]);
+  }, [fps, frames, phase, freeze]);
 
-  const anchorOffX = -(FRAME_W / 2) * SCALE;
-  const anchorOffY = -(FRAME_H / 2) * SCALE;
+  const anchorOffX = -HALF_WIDTH;
+  const anchorOffY = -HALF_HEIGHT;
 
   return (
     <div
@@ -106,14 +87,17 @@ function PlayerSprite({ x, y, phase = "idle", freeze = false }) {
         position: "absolute",
         left: `${x}px`,
         top: `${y}px`,
-        width: `${FRAME_W * SCALE}px`,
-        height: `${FRAME_H * SCALE}px`,
-        transform: `translate(${anchorOffX}px, ${anchorOffY}px)`,
+        width: `${FRAME_WIDTH * SCALE}px`,
+        height: `${FRAME_HEIGHT * SCALE}px`,
+        transform: `translate3d(${anchorOffX}px, ${anchorOffY}px, 0)`,
         transformOrigin: "center center",
         overflow: "visible",
         willChange: "transform",
+        backfaceVisibility: "hidden",
+        contain: "layout paint",
       }}>
       <div
+        className="sprite"
         ref={spriteRef}
         style={{
           width: "100%",
@@ -121,7 +105,8 @@ function PlayerSprite({ x, y, phase = "idle", freeze = false }) {
           backgroundRepeat: "no-repeat",
           backgroundPosition: "0 0",
           imageRendering: "pixelated",
-          willChange: "background-position",
+          transform: "translateZ(0)",
+          willChange: "background-position, transform",
         }}
       />
     </div>

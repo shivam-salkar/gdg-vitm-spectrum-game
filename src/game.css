@@ -323,6 +323,8 @@
 /* Backgrounds */
 .game-background {
   display: block;
+  contain: paint;
+  backface-visibility: hidden;
 }
 
 /* Slash Effect */
@@ -332,6 +334,7 @@
   height: 200px;
   pointer-events: none;
   animation: slashStrike 0.3s ease-out forwards;
+  will-change: transform, opacity;
 }
 
 .slash-effect::before {
@@ -504,6 +507,7 @@
 /* Flash Effects */
 .flash-white {
   animation: flashWhite 0.2s ease-out;
+  will-change: opacity;
 }
 
 @keyframes flashWhite {
@@ -517,6 +521,7 @@
 
 .darken-screen {
   animation: darkenScreen 1.5s ease-out forwards;
+  will-change: opacity;
 }
 
 @keyframes darkenScreen {
@@ -546,6 +551,7 @@
 /* Screen shake - applied only to overlay, not sprites */
 .screen-shake {
   animation: shakeHit 0.35s ease-out;
+  will-change: transform;
 }
 
 /* Floating damage numbers */
@@ -559,6 +565,7 @@
 .damage-popup {
   animation: dmgFloat 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   user-select: none;
+  will-change: transform, opacity;
 }
 
 /* Sprite rendering optimization */

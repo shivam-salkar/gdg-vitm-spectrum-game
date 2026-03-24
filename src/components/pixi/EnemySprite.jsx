@@ -4,11 +4,11 @@ import { getSpriteFrames } from "../../pixiUtils";
 import * as PIXI from "pixi.js";
 
 const ANIMATIONS = {
-  idle: { url: "/assets/Samurai_Commander/Idle.png", frames: 5 },
-  walk: { url: "/assets/Samurai_Commander/Walk.png", frames: 9 },
-  attacking: { url: "/assets/Samurai_Commander/Attack_1.png", frames: 4 },
-  hit: { url: "/assets/Samurai_Commander/Hurt.png", frames: 2 },
-  death: { url: "/assets/Samurai_Commander/Dead.png", frames: 6 },
+  idle: { url: "/assets/Samurai_Commander/Idle.webp", frames: 5 },
+  walk: { url: "/assets/Samurai_Commander/Walk.webp", frames: 9 },
+  attacking: { url: "/assets/Samurai_Commander/Attack_1.webp", frames: 4 },
+  hit: { url: "/assets/Samurai_Commander/Hurt.webp", frames: 2 },
+  death: { url: "/assets/Samurai_Commander/Dead.webp", frames: 6 },
 };
 
 export default function EnemySprite({

@@ -13,9 +13,10 @@ export default function IntroScreen({ gameState, sounds }) {
   const cleanupRef = useRef(false);
   const audioPlayedRef = useRef(false);
   const introAudioRef = useRef(null);
+  const audioStartingRef = useRef(false);
 
   const LYRICS =
-  "You burned my people. You broke our code. Now you face what remains… the Ghost.";
+    "You burned my people. You broke our code. Now you face what remains… the Ghost.";
   const SUBTITLE_START = 10; // frames to wait before starting subtitles
   const CHAR_SPEED = 7; // frames per character (lower = faster typing)
   const SUBTITLE_DURATION = LYRICS.length * CHAR_SPEED + 180; // Typewriter time + longer hold
@@ -25,31 +26,49 @@ export default function IntroScreen({ gameState, sounds }) {
     if (introAudioRef.current) {
       introAudioRef.current.pause();
       introAudioRef.current.currentTime = 0;
-      introAudioRef.current = null;
     }
+    audioStartingRef.current = false;
   }, []);
 
-  const tryPlayIntroAudio = useCallback(() => {
-    if (cleanupRef.current || audioPlayedRef.current || !introAudioRef.current) {
+  const tryPlayIntroAudio = useCallback(async () => {
+    if (
+      cleanupRef.current ||
+      audioPlayedRef.current ||
+      !introAudioRef.current ||
+      audioStartingRef.current
+    ) {
       return;
     }
 
-    const playPromise = introAudioRef.current.play();
-    if (playPromise?.then) {
-      playPromise
-        .then(() => {
-          audioPlayedRef.current = true;
-          setAwaitingInteraction(false);
-        })
-        .catch((err) => {
-          console.log("Intro audio play failed:", err);
-          setAwaitingInteraction(true);
+    const audio = introAudioRef.current;
+    audioStartingRef.current = true;
+
+    try {
+      if (audio.readyState < 2) {
+        await new Promise((resolve) => {
+          const handleReady = () => {
+            audio.removeEventListener("canplay", handleReady);
+            audio.removeEventListener("canplaythrough", handleReady);
+            resolve();
+          };
+
+          audio.addEventListener("canplay", handleReady, { once: true });
+          audio.addEventListener("canplaythrough", handleReady, { once: true });
+          audio.load();
         });
-      return;
-    }
+      }
 
-    audioPlayedRef.current = true;
-    setAwaitingInteraction(false);
+      if (cleanupRef.current || !introAudioRef.current) return;
+
+      await audio.play();
+      audioPlayedRef.current = true;
+      setAwaitingInteraction(false);
+    } catch (err) {
+      console.log("Intro audio play failed:", err);
+      setAwaitingInteraction(true);
+    } finally {
+      audioStartingRef.current = false;
+    }
   }, []);
 
   useEffect(() => {
@@ -66,13 +85,21 @@ export default function IntroScreen({ gameState, sounds }) {
   useEffect(() => {
     const audio = new Audio("/assets/player_speech.mp3");
     audio.preload = "auto";
+    audio.playsInline = true;
     audio.volume = 1;
+    audio.loop = false;
+    audio.addEventListener("ended", () => {
+      audioPlayedRef.current = true;
+      setAwaitingInteraction(false);
+    });
     introAudioRef.current = audio;
-    tryPlayIntroAudio();
+    audio.load();
+    void tryPlayIntroAudio();
 
     return () => {
       if (introAudioRef.current === audio) {
         stopIntroAudio();
+        introAudioRef.current = null;
       }
     };
   }, [stopIntroAudio, tryPlayIntroAudio]);
@@ -81,15 +108,23 @@ export default function IntroScreen({ gameState, sounds }) {
     if (!awaitingInteraction) return;
 
     const handleInteraction = () => {
-      tryPlayIntroAudio();
+      void tryPlayIntroAudio();
     };
 
-    window.addEventListener("pointerdown", handleInteraction);
-    window.addEventListener("keydown", handleInteraction);
+    window.addEventListener("pointerdown", handleInteraction, {
+      capture: true,
+    });
+    window.addEventListener("keydown", handleInteraction, {
+      capture: true,
+    });
 
     return () => {
-      window.removeEventListener("pointerdown", handleInteraction);
-      window.removeEventListener("keydown", handleInteraction);
+      window.removeEventListener("pointerdown", handleInteraction, {
+        capture: true,
+      });
+      window.removeEventListener("keydown", handleInteraction, {
+        capture: true,
+      });
     };
   }, [awaitingInteraction, tryPlayIntroAudio]);
 
@@ -138,7 +173,8 @@ export default function IntroScreen({ gameState, sounds }) {
         height: "100%",
         backgroundColor: "#0d1117",
         overflow: "hidden",
-      }}>
+      }}
+    >
       <Background />
 
       <div
@@ -151,9 +187,10 @@ export default function IntroScreen({ gameState, sounds }) {
           overflow: "hidden",
           zIndex: 20,
           pointerEvents: "none",
-        }}>
+        }}
+      >
         <img
-          src="/assets/gdg-logo.png"
+          src="/assets/gdg-logo.webp"
           alt="GDG logo"
           style={{
             position: "absolute",
@@ -187,7 +224,8 @@ export default function IntroScreen({ gameState, sounds }) {
           opacity: titleAlpha,
           transition: "opacity 0.3s ease-out",
           fontSize: "42px",
-        }}>
+        }}
+      >
         SPECTRUM
       </div>
 
@@ -207,7 +245,8 @@ export default function IntroScreen({ gameState, sounds }) {
             backgroundColor: "rgba(0,0,0,0.5)",
             padding: "10px",
             borderRadius: "4px",
-          }}>
+          }}
+        >
           {LYRICS.substring(0, subtitleChar)}
         </div>
       )}
@@ -227,7 +266,8 @@ export default function IntroScreen({ gameState, sounds }) {
             fontSize: "9px",
             textAlign: "center",
             zIndex: 100,
-          }}>
+          }}
+        >
           TAP OR PRESS ANY KEY FOR VOICE
         </div>
       )}
@@ -261,7 +301,8 @@ export default function IntroScreen({ gameState, sounds }) {
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
             e.currentTarget.style.color = "#fff";
-          }}>
+          }}
+        >
           SKIP INTRO ➔
         </div>
       )}

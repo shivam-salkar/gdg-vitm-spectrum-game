@@ -7,7 +7,8 @@
     "dev": "node ./node_modules/vite/bin/vite.js",
     "build": "node ./node_modules/vite/bin/vite.js build",
     "lint": "eslint .",
-    "preview": "node ./node_modules/vite/bin/vite.js preview"
+    "preview": "node ./node_modules/vite/bin/vite.js preview",
+    "convert:webp": "bash ./scripts/convert-images-to-webp.sh"
   },
   "dependencies": {
     "autoprefixer": "^10.4.27",
@@ -15,6 +16,7 @@
     "postcss": "^8.5.8",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "socket.io-client": "^4.8.3",
     "tailwindcss": "^4.2.1"
   },
   "devDependencies": {

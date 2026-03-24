@@ -4,10 +4,10 @@ import { getSpriteFrames } from "../../pixiUtils";
 import * as PIXI from "pixi.js";
 
 const ANIMATIONS = {
-  idle: { url: "/assets/Samurai/Idle.png", frames: 6 },
-  walk: { url: "/assets/Samurai/Walk.png", frames: 9 },
-  attacking: { url: "/assets/Samurai/Attack_1.png", frames: 4 },
-  death: { url: "/assets/Samurai/Dead.png", frames: 6 },
+  idle: { url: "/assets/Samurai/Idle.webp", frames: 6 },
+  walk: { url: "/assets/Samurai/Walk.webp", frames: 9 },
+  attacking: { url: "/assets/Samurai/Attack_1.webp", frames: 4 },
+  death: { url: "/assets/Samurai/Dead.webp", frames: 6 },
 };
 
 export default function PlayerSprite({
@@ -80,5 +80,4 @@ export default function PlayerSprite({
   });
 
   return <Container ref={containerRef} x={x} y={y} />;
-}
 }

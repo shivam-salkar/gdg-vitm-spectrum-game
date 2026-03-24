@@ -1,37 +1,30 @@
-import React, { useRef, useEffect, useState } from "react";
-import { wait } from "../hooks/useAnimationLoop.js";
+import React, { useRef, useEffect } from "react";
 import "../game.css";
 
-export default function LoadingScreen({ gameState, sounds }) {
-  const [progress, setProgress] = useState(0);
-  const progressRef = useRef(0);
+export default function LoadingScreen({
+  gameState,
+  sounds,
+  loadingProgress = 0,
+  assetsReady = false,
+}) {
   const completedRef = useRef(false);
+  const progress = assetsReady ? 100 : loadingProgress;
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setProgress((p) => {
-        const newProgress = Math.min(100, p + 0.5);
-        progressRef.current = newProgress;
+    if (!assetsReady || completedRef.current) return undefined;
 
-        if (newProgress >= 100 && !completedRef.current) {
-          completedRef.current = true;
-          clearInterval(interval);
-          wait(100).then(() => {
-            try {
-              sounds.startAmbientWind();
-            } catch (e) {
-              console.warn("Audio start failed", e);
-            }
-            gameState.setScreen("intro");
-          });
-        }
+    completedRef.current = true;
+    const timeoutId = window.setTimeout(() => {
+      try {
+        sounds.startAmbientWind();
+      } catch (e) {
+        console.warn("Audio start failed", e);
+      }
+      gameState.setScreen("intro");
+    }, 250);
 
-        return newProgress;
-      });
-    }, 30);
-
-    return () => clearInterval(interval);
-  }, [gameState, sounds]);
+    return () => window.clearTimeout(timeoutId);
+  }, [assetsReady, gameState, sounds]);
 
   return (
     <div
@@ -45,7 +38,8 @@ export default function LoadingScreen({ gameState, sounds }) {
         alignItems: "center",
         position: "relative",
         overflow: "hidden",
-      }}>
+      }}
+    >
       <div
         style={{
           position: "absolute",
@@ -56,9 +50,10 @@ export default function LoadingScreen({ gameState, sounds }) {
           overflow: "hidden",
           zIndex: 20,
           pointerEvents: "none",
-        }}>
+        }}
+      >
         <img
-          src="/assets/gdg-logo.png"
+          src="/assets/gdg-logo.webp"
           alt="GDG logo"
           style={{
             position: "absolute",
@@ -83,7 +78,8 @@ export default function LoadingScreen({ gameState, sounds }) {
           fontSize: "12px",
           color: "#ffffff",
           lineHeight: "1.8",
-        }}>
+        }}
+      >
         by GOOGLE DEVELOPER GROUP VITM
       </div>
 
@@ -95,7 +91,8 @@ export default function LoadingScreen({ gameState, sounds }) {
           borderRadius: "4px",
           overflow: "hidden",
           background: "#111",
-        }}>
+        }}
+      >
         <div
           style={{
             height: "100%",
@@ -112,7 +109,8 @@ export default function LoadingScreen({ gameState, sounds }) {
           marginTop: "20px",
           fontSize: "10px",
           color: "#aaa",
-        }}>
+        }}
+      >
         {Math.round(progress)}%
       </div>
     </div>
