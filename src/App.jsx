@@ -138,6 +138,30 @@ export default function App() {
     }
   }, []);
 
+  const exitFullscreen = useCallback(() => {
+    try {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    } catch (err) {
+      console.log("Fullscreen exit failed:", err);
+    }
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) {
+      exitFullscreen();
+    } else {
+      requestFullscreen();
+    }
+  }, [requestFullscreen, exitFullscreen]);
+
   const syncViewport = useCallback(() => {
     const viewport = getViewportSize();
     setViewportCssVars(viewport);
@@ -386,7 +410,7 @@ export default function App() {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          requestFullscreen();
+          toggleFullscreen();
         }}
         style={{
           position: "fixed",
