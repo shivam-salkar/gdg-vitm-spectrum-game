@@ -25,9 +25,11 @@ export function useMultiplayerGame(sessionId, playerId, enabled = false) {
     // Connect to server
     const newSocket = io(SERVER_URL, {
       reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
+      // Try to reconnect quickly and keep trying indefinitely so that
+      // first-time visitors connect automatically as soon as the server is up.
+      reconnectionDelay: 200,
+      reconnectionDelayMax: 400,
+      reconnectionAttempts: Infinity,
     });
 
     newSocket.on("connect", () => {
