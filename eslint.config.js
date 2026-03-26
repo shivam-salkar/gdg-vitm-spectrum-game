@@ -26,4 +26,11 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  // Server-side Node.js files – override browser globals with Node globals.
+  {
+    files: ['server/**/*.js', 'ecosystem.config.cjs'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
 ])

@@ -1,20 +1,68 @@
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { Redis } from 'ioredis';
 import { CONFIG } from '../src/constants/gameConfig.js';
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: '*' },
+  cors: { origin: process.env.CORS_ORIGIN || '*' },
+  // Enable connection-state recovery so reconnecting clients resume seamlessly.
+  connectionStateRecovery: { maxDisconnectionDuration: 30_000 },
 });
 
-// Simple game state (in-memory)
-const games = {}; // { sessionId: { players, enemyHP, playerHP, phase, etc } }
+// ---------------------------------------------------------------------------
+// Optional Redis adapter – enables horizontal scaling across multiple Node
+// processes (e.g. PM2 cluster mode).  Only activated when REDIS_URL is set.
+// ---------------------------------------------------------------------------
+if (process.env.REDIS_URL) {
+  const pubClient = new Redis(process.env.REDIS_URL);
+  const subClient = pubClient.duplicate();
+
+  try {
+    await Promise.all([
+      new Promise((resolve, reject) => {
+        pubClient.once('ready', resolve);
+        pubClient.once('error', reject);
+      }),
+      new Promise((resolve, reject) => {
+        subClient.once('ready', resolve);
+        subClient.once('error', reject);
+      }),
+    ]);
+  } catch (err) {
+    console.error(
+      `[startup] Failed to connect to Redis at ${process.env.REDIS_URL}.`,
+      'Ensure Redis is running and REDIS_URL is correct.',
+      err,
+    );
+    process.exit(1);
+  }
+
+  io.adapter(createAdapter(pubClient, subClient));
+  console.log('[startup] Redis adapter active –', process.env.REDIS_URL);
+} else {
+  console.log('[startup] No REDIS_URL set – running single-process in-memory mode');
+}
+
+// ---------------------------------------------------------------------------
+// In-memory game state
+// ---------------------------------------------------------------------------
+const games = {}; // { sessionId: { players, enemyHP, playerHP, phase, lastActivity, ... } }
 const attackQueues = {}; // { sessionId: [attacks] }
 const serverLogs = [];
 const MAX_SERVER_LOGS = 2000;
 const ADMIN_PASSWORD = process.env.NIMDA_PASSWORD || process.env.ADMIN_PASSWORD || 'nimda';
+
+// Per-socket attack rate limiting – max attacks enqueued per RATE_WINDOW_MS.
+const RATE_LIMIT_MAX = Number(process.env.ATTACK_RATE_LIMIT) || 10; // attacks per window
+const RATE_WINDOW_MS = 1000; // 1-second sliding window
+const socketAttackCounters = {}; // { socketId: { count, windowStart } }
+
+// Idle session cleanup – sessions inactive for longer than this are removed.
+const SESSION_IDLE_MS = (Number(process.env.SESSION_IDLE_MINUTES) || 30) * 60 * 1000;
 
 function toInt(value, fallback) {
   const parsed = Number.parseInt(value, 10);
@@ -50,6 +98,26 @@ function addLog(type, payload = {}) {
   console.log(`[${entry.ts}] ${type}`, payload);
 }
 
+/**
+ * Check whether a socket is within the allowed attack rate.
+ * Returns true when the attack should be allowed, false when it should be dropped.
+ */
+function allowAttack(socketId) {
+  const now = Date.now();
+  let counter = socketAttackCounters[socketId];
+
+  if (!counter || now - counter.windowStart >= RATE_WINDOW_MS) {
+    socketAttackCounters[socketId] = { count: 1, windowStart: now };
+    return true;
+  }
+
+  counter.count += 1;
+  if (counter.count > RATE_LIMIT_MAX) {
+    return false;
+  }
+  return true;
+}
+
 function normalizeGameState(game) {
   if (!game) return;
 
@@ -70,6 +138,13 @@ function normalizeGameState(game) {
   game.playerHP = Math.max(0, Math.min(CONFIG.PLAYER_MAX_HP, game.playerHP));
 }
 
+/** Stamp the session's last-activity time to prevent premature cleanup. */
+function touchSession(sessionId) {
+  if (games[sessionId]) {
+    games[sessionId].lastActivity = Date.now();
+  }
+}
+
 function getAdminPasswordFromRequest(req) {
   const fromQuery = req.query.password;
   if (fromQuery) return String(fromQuery);
@@ -86,6 +161,7 @@ function getAdminPasswordFromRequest(req) {
 }
 
 function getSessionsSnapshot() {
+  const now = Date.now();
   return Object.entries(games).map(([sessionId, game]) => ({
     sessionId,
     phase: game.phase,
@@ -96,6 +172,7 @@ function getSessionsSnapshot() {
     attacksSinceEnemyCounter: game.attacksSinceEnemyCounter || 0,
     pendingQueue: attackQueues[sessionId]?.length || 0,
     players: [...game.players],
+    idleSec: game.lastActivity ? Math.floor((now - game.lastActivity) / 1000) : null,
   }));
 }
 
@@ -110,6 +187,7 @@ function renderAdminHtml(snapshot) {
           <td>${session.playerHP}/${session.playerMaxHP}</td>
           <td>${session.pendingQueue}</td>
           <td>${session.attacksSinceEnemyCounter}</td>
+          <td>${session.idleSec !== null ? `${session.idleSec}s` : 'n/a'}</td>
           <td>${escapeHtml(session.players.join(' | '))}</td>
         </tr>`,
     )
@@ -163,10 +241,11 @@ function renderAdminHtml(snapshot) {
           <th>Shared Player HP</th>
           <th>Queued Attacks</th>
           <th>Counter Progress</th>
+          <th>Idle</th>
           <th>Players</th>
         </tr>
       </thead>
-      <tbody>${sessionsRows || '<tr><td colspan="7">No active sessions</td></tr>'}</tbody>
+      <tbody>${sessionsRows || '<tr><td colspan="8">No active sessions</td></tr>'}</tbody>
     </table>
 
     <h2>Recent Logs</h2>
@@ -197,6 +276,16 @@ function renderAdminHtml(snapshot) {
   </body>
 </html>`;
 }
+
+// Health-check endpoint – used by Nginx upstream checks and monitoring tools.
+app.get('/health', (_req, res) => {
+  res.json({
+    ok: true,
+    uptime: process.uptime(),
+    sessions: Object.keys(games).length,
+    sockets: io.engine.clientsCount,
+  });
+});
 
 app.get('/nimda', (req, res) => {
   const providedPassword = getAdminPasswordFromRequest(req);
@@ -272,6 +361,7 @@ io.on('connection', (socket) => {
         playerHP: CONFIG.PLAYER_MAX_HP,
         attacksSinceEnemyCounter: 0,
         phase: 'readyToAttack',
+        lastActivity: Date.now(),
       };
       attackQueues[sessionId] = [];
       addLog('session_created', { sessionId, playerId });
@@ -280,6 +370,7 @@ io.on('connection', (socket) => {
       if (!games[sessionId].players.includes(playerId)) {
         games[sessionId].players.push(playerId);
       }
+      touchSession(sessionId);
       addLog('player_joined_existing_session', {
         sessionId,
         playerId,
@@ -308,7 +399,15 @@ io.on('connection', (socket) => {
   // Handle attack request
   socket.on('attack', ({ sessionId, playerId }) => {
     if (!games[sessionId]) return;
-    
+
+    // Rate-limit: drop excess attacks from a single socket to protect memory.
+    if (!allowAttack(socket.id)) {
+      addLog('attack_rate_limited', { sessionId, playerId, socketId: socket.id });
+      return;
+    }
+
+    touchSession(sessionId);
+
     // Add to queue
     attackQueues[sessionId].push({
       playerId,
@@ -328,7 +427,8 @@ io.on('connection', (socket) => {
 
     const game = games[sessionId];
     normalizeGameState(game);
-    
+    touchSession(sessionId);
+
     // Apply shared damage once for all players.
     game.playerHP = Math.max(0, game.playerHP - CONFIG.ENEMY_DAMAGE_PER_HIT);
     if (game.playerHP <= 0 && game.phase !== 'playerDead') {
@@ -359,6 +459,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    // Clean up per-socket rate-limit counter to avoid unbounded growth.
+    delete socketAttackCounters[socket.id];
     addLog('socket_disconnected', { socketId: socket.id });
   });
 });
@@ -375,6 +477,7 @@ setInterval(() => {
       const attack = queue.shift();
       const oldEnemyHP = game.enemyHP;
       game.enemyHP = Math.max(0, game.enemyHP - attack.damage);
+      touchSession(sessionId);
 
       addLog('attack_processed', {
         sessionId,
@@ -396,11 +499,49 @@ setInterval(() => {
   });
 }, 500); // Process attacks every 500ms
 
+// Clean up sessions that have been idle for longer than SESSION_IDLE_MS.
+setInterval(() => {
+  const now = Date.now();
+  Object.keys(games).forEach((sessionId) => {
+    const game = games[sessionId];
+    if (game.lastActivity && now - game.lastActivity > SESSION_IDLE_MS) {
+      addLog('session_idle_cleanup', {
+        sessionId,
+        idleMs: now - game.lastActivity,
+      });
+      delete games[sessionId];
+      delete attackQueues[sessionId];
+    }
+  });
+}, 60_000); // Check every minute
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   addLog('server_started', {
     port: PORT,
     adminRoute: '/nimda',
     passwordSource: process.env.NIMDA_PASSWORD || process.env.ADMIN_PASSWORD ? 'env' : 'default(nimda)',
+    attackRateLimit: RATE_LIMIT_MAX,
+    sessionIdleMs: SESSION_IDLE_MS,
   });
 });
+
+// Graceful shutdown: finish in-flight work, then exit cleanly so that PM2
+// or the OS process manager can restart the server without dropping data.
+function gracefulShutdown(signal) {
+  addLog('server_shutting_down', { signal });
+  console.log(`[shutdown] Received ${signal} – closing HTTP server…`);
+  server.close(() => {
+    console.log('[shutdown] HTTP server closed. Exiting.');
+    process.exit(0);
+  });
+
+  // Force-exit after 10 s if connections are still lingering.
+  setTimeout(() => {
+    console.error('[shutdown] Forced exit after timeout.');
+    process.exit(1);
+  }, 10_000).unref();
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
